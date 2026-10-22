@@ -44,6 +44,7 @@ class SettingsScreen extends StatefulWidget {
     required this.shifts,
     required this.onSettingsSaved,
     this.onSyncNow,
+    this.onRotateKey,
   });
 
   final SettingsController controller;
@@ -53,6 +54,7 @@ class SettingsScreen extends StatefulWidget {
   final ShiftRepository shifts;
   final ValueChanged<TerminalSettings> onSettingsSaved;
   final Future<SyncRunResult> Function()? onSyncNow;
+  final Future<void> Function()? onRotateKey;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -290,6 +292,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           canCloseShift:
               (user?.can(AppPermission.viewReports) ?? false) ||
               (user?.can(AppPermission.sell) ?? false),
+          canRotate: user?.can(AppPermission.rotateKeys) ?? false,
+          onRotate: widget.onRotateKey,
         ),
     ];
 

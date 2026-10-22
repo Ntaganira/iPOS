@@ -67,6 +67,7 @@ class PosShell extends StatefulWidget {
     this.customerRepository,
     this.onSettingsSaved,
     this.onSyncNow,
+    this.onRotateKey,
     this.user,
     this.storeName = 'iPOS Parts Counter',
   });
@@ -85,6 +86,7 @@ class PosShell extends StatefulWidget {
   final CustomerRepository? customerRepository;
   final ValueChanged<TerminalSettings>? onSettingsSaved;
   final Future<SyncRunResult> Function()? onSyncNow;
+  final Future<void> Function()? onRotateKey;
   final AppUser? user;
   final String storeName;
 
@@ -312,6 +314,7 @@ class _PosShellState extends State<PosShell> {
                                   onSettingsSaved:
                                       widget.onSettingsSaved ?? (_) {},
                                   onSyncNow: widget.onSyncNow,
+                                  onRotateKey: widget.onRotateKey,
                                 ),
                               _ => ModulePlaceholder(module: _activeModule),
                             },

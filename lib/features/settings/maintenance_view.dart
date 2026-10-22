@@ -7,9 +7,10 @@
  * - User      : NTAGANIRA H.
  * - Desc      : Operator-facing maintenance panel. Executes shift close plus
  *               post-shift VACUUM, encrypted backup, gated plaintext export, and
- *               SQLCipher integrity verification. Every mutating operation is
- *               audited by the service with the signed-in actor, and dangerous
- *               actions require an explicit confirmation before running.
+ *               SQLCipher integrity verification, and the explicit admin
+ *               key-rotation ceremony. Every mutating operation is audited by
+ *               the service with the signed-in actor, and dangerous actions
+ *               require an explicit confirmation before running.
  * </pre>
  */
 
@@ -30,12 +31,16 @@ class MaintenanceView extends StatefulWidget {
     required this.shifts,
     required this.canBackup,
     required this.canCloseShift,
+    this.canRotate = false,
+    this.onRotate,
   });
 
   final DatabaseMaintenanceService maintenance;
   final ShiftRepository shifts;
   final bool canBackup;
   final bool canCloseShift;
+  final bool canRotate;
+  final Future<void> Function()? onRotate;
 
   @override
   State<MaintenanceView> createState() => _MaintenanceViewState();
@@ -128,6 +133,25 @@ class _MaintenanceViewState extends State<MaintenanceView> {
       await widget.maintenance.checkpoint();
       await widget.maintenance.vacuum();
       return l10n.vacuumDone;
+    });
+  }
+
+  Future<void> _rotateKey() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await _confirm(
+      '${l10n.keyRotationWarning}\n\n${l10n.rotateKey}',
+      destructive: true,
+    );
+    if (!confirmed) {
+      return;
+    }
+    await _run(() async {
+      final rotate = widget.onRotate;
+      if (rotate == null) {
+        throw StateError('Key rotation is not available.');
+      }
+      await rotate();
+      return '${l10n.keyRotated}\n${l10n.restartRequired}';
     });
   }
 
@@ -264,6 +288,20 @@ class _MaintenanceViewState extends State<MaintenanceView> {
               onPressed: !widget.canBackup || _busy ? null : _vacuum,
               child: Text(l10n.confirm),
             ),
+          ),
+          const SizedBox(height: 10),
+          _MaintenanceCard(
+            icon: Icons.key_rounded,
+            title: l10n.rotateKey,
+            subtitle: l10n.keyRotationWarning,
+            action: OutlinedButton(
+              key: const Key('rotate-key-action'),
+              onPressed: !widget.canRotate || widget.onRotate == null || _busy
+                  ? null
+                  : _rotateKey,
+              child: Text(l10n.confirm),
+            ),
+            danger: true,
           ),
           const SizedBox(height: 10),
           _MaintenanceCard(

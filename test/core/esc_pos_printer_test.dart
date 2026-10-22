@@ -124,10 +124,7 @@ void main() {
     );
 
     expect(document.kind, ReceiptKind.proforma);
-    expect(
-      document.invoiceNumber,
-      matches(RegExp(r'^PRO-20261022-\d{4}$')),
-    );
+    expect(document.invoiceNumber, matches(RegExp(r'^PRO-20261022-\d{4}$')));
     expect(document.totalCents, 29500);
     expect(preview, contains('PROFORMA'));
     expect(preview, isNot(contains('Paid')));

@@ -19,8 +19,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'core/security/database_key_rotation_service.dart';
+import 'core/security/permissions.dart';
+import 'core/security/secure_key_manager.dart';
 import 'core/theme/app_theme.dart';
 import 'data/database/app_database.dart';
+import 'data/database/app_database_factory.dart';
 import 'data/database/database_maintenance_service.dart';
 import 'data/models/customer_option.dart';
 import 'data/repositories/audit_repository.dart';
@@ -81,6 +85,13 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
   String? _draftUserId;
   bool _restoringDraft = false;
   bool _initialized = false;
+  bool _databaseClosed = false;
+  bool _rotatingKey = false;
+  bool _vaultRestartRequired = false;
+  String? _rotationBackupPath;
+  String? _rotationError;
+  final DatabaseKeyRotationService _keyRotationService =
+      DatabaseKeyRotationService();
 
   @override
   void initState() {
@@ -264,8 +275,11 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
     _authController.dispose();
     // The app is the owner of the process-wide database. Closing releases the
     // background isolate and WAL handles; the OS reclaims them anyway, but an
-    // explicit close keeps desktop hot-restart cycles clean.
-    unawaited(widget.database.close());
+    // explicit close keeps desktop hot-restart cycles clean. A rotation has
+    // already closed it and closed handles must not be closed twice.
+    if (!_databaseClosed) {
+      unawaited(widget.database.close());
+    }
     super.dispose();
   }
 
@@ -295,6 +309,94 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
       deviceId: settings.deviceId,
       notifications: _notificationRepository,
     ).run();
+  }
+
+  Future<void> _rotateDatabaseKey() async {
+    final user = _authController.currentUser;
+    if (user == null || !user.can(AppPermission.rotateKeys)) {
+      throw StateError(
+        'Rotating the database key requires the administrator key-rotation '
+        'permission.',
+      );
+    }
+    if (_rotatingKey || _databaseClosed || _vaultRestartRequired) {
+      throw StateError('A database key rotation is already in progress.');
+    }
+    _rotatingKey = true;
+    KeyRotationResult? result;
+    try {
+      final keyManager = SecureKeyManager.instance;
+      final oldKey = await keyManager.databaseKeyHex();
+      final newKey = keyManager.generateCandidateKey();
+      final databaseFile = await AppDatabaseFactory.resolveDatabaseFile();
+      if (!databaseFile.existsSync()) {
+        throw StateError('The encrypted database file was not found.');
+      }
+      await _auditRepository.append(
+        eventType: 'security.key_rotation_requested',
+        action: 'keys.rotate',
+        actor: _authController.auditActor,
+        entityType: 'database',
+        entityId: 'primary',
+        message: '${user.displayName} requested SQLCipher key rotation.',
+        payload: <String, Object?>{
+          'device_id': _settingsController.settings.deviceId,
+        },
+      );
+
+      _draftTimer?.cancel();
+      final draftUserId = _draftUserId;
+      if (draftUserId != null) {
+        await _flushDraft(draftUserId);
+      }
+      try {
+        await widget.database.close();
+      } finally {
+        _databaseClosed = true;
+      }
+
+      try {
+        result = await _keyRotationService.rotate(
+          databaseFile: databaseFile,
+          oldKeyHex: oldKey,
+          newKeyHex: newKey,
+        );
+        await keyManager.replaceDatabaseKey(newKey);
+      } catch (_) {
+        // If the secure-store write failed after rekeying, restore the
+        // pre-rotation file so the still-persisted old key can open it.
+        if (result != null) {
+          try {
+            await result.backupFile.copy(databaseFile.path);
+          } catch (_) {
+            // Keep the original failure; the restart screen names the
+            // recovery backup for manual restoration.
+          }
+        }
+        rethrow;
+      }
+
+      if (mounted) {
+        setState(() {
+          _rotationBackupPath = result?.backupFile.path;
+          _vaultRestartRequired = true;
+          _rotationError = null;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          if (result != null) {
+            _rotationBackupPath = result.backupFile.path;
+          }
+          _rotationError = error.toString();
+          _vaultRestartRequired = _databaseClosed;
+        });
+      }
+      rethrow;
+    } finally {
+      _rotatingKey = false;
+    }
   }
 
   @override
@@ -327,6 +429,12 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
   }
 
   Widget _home() {
+    if (_vaultRestartRequired) {
+      return _KeyRotationRestartScreen(
+        backupPath: _rotationBackupPath,
+        error: _rotationError,
+      );
+    }
     if (!_initialized || _authController.loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -357,8 +465,96 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
       onSettingsSaved: (settings) =>
           _checkoutController.setTaxRateBps(settings.taxRateBps),
       onSyncNow: _syncNow,
+      onRotateKey: _rotateDatabaseKey,
       user: _authController.currentUser,
       storeName: _settingsController.settings.storeName,
+    );
+  }
+}
+
+class _KeyRotationRestartScreen extends StatelessWidget {
+  const _KeyRotationRestartScreen({this.backupPath, this.error});
+
+  final String? backupPath;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final failed = error != null;
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(28),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    failed ? Icons.gpp_bad_rounded : Icons.lock_reset_rounded,
+                    size: 52,
+                    color: failed ? scheme.error : scheme.primary,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    failed ? l10n.keyRotationWarning : l10n.keyRotated,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    l10n.restartRequired,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                  if (backupPath != null) ...[
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: scheme.outlineVariant),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.encryptedBackup,
+                            style: theme.textTheme.labelLarge,
+                          ),
+                          const SizedBox(height: 4),
+                          SelectableText(
+                            backupPath!,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (failed) ...[
+                    const SizedBox(height: 16),
+                    SelectableText(
+                      error!,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.error,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
