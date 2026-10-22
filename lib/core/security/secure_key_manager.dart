@@ -1,7 +1,7 @@
 /**
  * <pre>
- * - Project   : iWarehouse - Glass Warehouse &amp; Mobile POS (ERP-Lite)
- * - Package   : com.ntaganira.heritier.iWarehouse.core.security
+ * - Project   : iPOS - Point of Sale
+ * - Package   : com.ntaganira.heritier.ipos.core.security
  * - File      : secure_key_manager.dart
  * - Date      : 2026. 10. 22.
  * - User      : NTAGANIRA H.
@@ -45,7 +45,7 @@ class SecureKeyManager {
   static final SecureKeyManager instance = SecureKeyManager();
 
   /// Versioned alias. Bump only with a deliberate key-rotation migration.
-  static const String _databaseKeyAlias = 'iwarehouse.sqlcipher.aes256.v1';
+  static const String _databaseKeyAlias = 'ipos.sqlcipher.aes256.v1';
 
   /// Exactly 64 lowercase hexadecimal characters == 32 bytes == 256 bits.
   static final RegExp _keyPattern = RegExp(r'^[0-9a-f]{64}$');
@@ -109,7 +109,7 @@ class SecureKeyManager {
       final normalized = existing.trim().toLowerCase();
       if (!_keyPattern.hasMatch(normalized)) {
         throw StateError(
-          'The secure store contains an invalid iWarehouse database key. '
+          'The secure store contains an invalid iPOS database key. '
           'Refusing to regenerate it: doing so would make the existing '
           'encrypted ledger unreadable. Restore the original key or follow '
           'the documented disaster-recovery procedure.',

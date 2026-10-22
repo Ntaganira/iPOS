@@ -1,7 +1,7 @@
 /**
  * <pre>
- * - Project   : iWarehouse - Glass Warehouse &amp; Mobile POS (ERP-Lite)
- * - Package   : com.ntaganira.heritier.iWarehouse.data.database
+ * - Project   : iPOS - Point of Sale
+ * - Package   : com.ntaganira.heritier.ipos.data.database
  * - File      : app_database.dart
  * - Date      : 2026. 10. 22.
  * - User      : NTAGANIRA H.

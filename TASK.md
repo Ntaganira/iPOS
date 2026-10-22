@@ -22,11 +22,11 @@ or CI-only work).
 - [x] Add `path_provider`, `path`, `uuid`, and `intl` utilities.
 - [x] Add `drift_dev` + `build_runner` generation dependencies.
 - [x] Add `main.dart` / `app.dart` composition root with fail-closed vault startup,
-      process-wide repository/controller ownership, dark warehouse default, and theme toggle.
+      process-wide repository/controller ownership, dark POS default, and theme toggle.
 - [x] Run `flutter pub get` and `dart run build_runner build` with the installed
       toolchain; `app_database.g.dart` is generated and committed as the reviewable schema artifact.
 - [x] Generate Android, iOS, Windows, macOS, and Linux runner scaffolding, set the visible
-      iWarehouse identity, enforce Android `minSdk 23`, and disable Android auto-backup so the
+      iPOS identity, enforce Android `minSdk 23`, and disable Android auto-backup so the
       encrypted vault is never restored without its Keystore key. Web is unsupported because
       SQLCipher uses `dart:ffi`.
 - [ ] Add iOS/macOS Keychain Sharing entitlements and validate secure storage on each runner.
@@ -82,7 +82,7 @@ or CI-only work).
 
 ## 5. Theme, Shell & Responsive 3-Column POS UI
 
-- [x] Add global Material 3 light theme and a low-strain, high-contrast warehouse dark theme.
+- [x] Add global Material 3 light theme and a low-strain, high-contrast dark POS theme.
 - [x] Add compact visual density and keyboard-first focus styling.
 - [x] Add collapsible left module rail (Register, Inventory Registry, Customers, Settings).
 - [x] Persist the sidebar as an animated expanded/collapsed rail with overflow-safe labels.
@@ -105,7 +105,7 @@ or CI-only work).
 
 - [ ] Define back-office domain: master data, supplier ingestion, accounting periods, global tax rules.
 - [ ] Add authenticated admin console (separate web deployment; never bundled in the offline client).
-- [ ] Add warehouse ingest workflow (PO -> receive -> bin assignment -> stock ledger).
+- [ ] Add inventory receiving workflow (PO -> receive -> bin assignment -> stock ledger).
 - [ ] Add sync API: push device deltas, pull master changes, resolve conflicts, issue sync cursors.
 - [ ] Add accounting exports and immutable audit views.
 

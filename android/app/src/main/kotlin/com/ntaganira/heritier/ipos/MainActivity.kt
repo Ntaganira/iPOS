@@ -1,4 +1,4 @@
-package com.ntaganira.heritier.iwarehouse
+package com.ntaganira.heritier.ipos
 
 import io.flutter.embedding.android.FlutterActivity
 

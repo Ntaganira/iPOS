@@ -1,7 +1,7 @@
 /**
  * <pre>
- * - Project   : iWarehouse - Glass Warehouse &amp; Mobile POS (ERP-Lite)
- * - Package   : com.ntaganira.heritier.iWarehouse.core.theme
+ * - Project   : iPOS - Point of Sale
+ * - Package   : com.ntaganira.heritier.ipos.core.theme
  * - File      : app_layout.dart
  * - Date      : 2026. 10. 22.
  * - User      : NTAGANIRA H.

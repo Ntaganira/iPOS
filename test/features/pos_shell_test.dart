@@ -1,7 +1,7 @@
 /**
  * <pre>
- * - Project   : iWarehouse - Glass Warehouse &amp; Mobile POS (ERP-Lite)
- * - Package   : com.ntaganira.heritier.iWarehouse.test.features
+ * - Project   : iPOS - Point of Sale
+ * - Package   : com.ntaganira.heritier.ipos.test.features
  * - File      : pos_shell_test.dart
  * - Date      : 2026. 10. 22.
  * - User      : NTAGANIRA H.
@@ -17,13 +17,13 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:iwarehouse/core/theme/app_theme.dart';
-import 'package:iwarehouse/data/database/app_database.dart';
-import 'package:iwarehouse/data/repositories/catalog_repository.dart';
-import 'package:iwarehouse/data/repositories/checkout_repository.dart';
-import 'package:iwarehouse/features/register/catalog_controller.dart';
-import 'package:iwarehouse/features/register/checkout_controller.dart';
-import 'package:iwarehouse/features/shell/pos_shell.dart';
+import 'package:ipos/core/theme/app_theme.dart';
+import 'package:ipos/data/database/app_database.dart';
+import 'package:ipos/data/repositories/catalog_repository.dart';
+import 'package:ipos/data/repositories/checkout_repository.dart';
+import 'package:ipos/features/register/catalog_controller.dart';
+import 'package:ipos/features/register/checkout_controller.dart';
+import 'package:ipos/features/shell/pos_shell.dart';
 
 void main() {
   late AppDatabase database;

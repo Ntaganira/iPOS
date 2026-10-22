@@ -1,14 +1,14 @@
 /**
  * <pre>
- * - Project   : iWarehouse - Glass Warehouse &amp; Mobile POS (ERP-Lite)
- * - Package   : com.ntaganira.heritier.iWarehouse.data.database.tables
+ * - Project   : iPOS - Point of Sale
+ * - Package   : com.ntaganira.heritier.ipos.data.database.tables
  * - File      : stock_ledger_table.dart
  * - Date      : 2026. 10. 22.
  * - User      : NTAGANIRA H.
  * - Desc      : Append-only inventory movement ledger. There is deliberately no
  *               is_deleted flag: corrections are new compensating rows, never
  *               destructive edits. Every counter sale writes a negative
- *               qty_delta atomically with its invoice; warehouse ingestion and
+ *               qty_delta atomically with its invoice; stock receiving and
  *               stock counts will append positive/adjustment rows through the
  *               same sync envelope.
  * </pre>
@@ -29,7 +29,7 @@ class StockLedger extends Table {
     onDelete: KeyAction.restrict,
   )();
 
-  /// Physical bin/shelf. Counter sales use `FRONT`; warehouse receipts carry
+  /// Physical bin/shelf. Counter sales use `FRONT`; stock receipts carry
   /// their actual bin assignment.
   TextColumn get binLocation => text().withLength(min: 1, max: 64)();
 

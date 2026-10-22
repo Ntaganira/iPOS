@@ -1795,7 +1795,7 @@ class StockLedgerRow extends DataClass implements Insertable<StockLedgerRow> {
   final String id;
   final String productId;
 
-  /// Physical bin/shelf. Counter sales use `FRONT`; warehouse receipts carry
+  /// Physical bin/shelf. Counter sales use `FRONT`; stock receipts carry
   /// their actual bin assignment.
   final String binLocation;
 

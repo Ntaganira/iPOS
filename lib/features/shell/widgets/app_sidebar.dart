@@ -1,7 +1,7 @@
 /**
  * <pre>
- * - Project   : iWarehouse - Glass Warehouse &amp; Mobile POS (ERP-Lite)
- * - Package   : com.ntaganira.heritier.iWarehouse.features.shell.widgets
+ * - Project   : iPOS - Point of Sale
+ * - Package   : com.ntaganira.heritier.ipos.features.shell.widgets
  * - File      : app_sidebar.dart
  * - Date      : 2026. 10. 22.
  * - User      : NTAGANIRA H.
@@ -167,7 +167,7 @@ class _BrandHeader extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'iWarehouse',
+                          'iPOS',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium?.copyWith(
@@ -178,7 +178,7 @@ class _BrandHeader extends StatelessWidget {
                         ),
                         const SizedBox(height: 1),
                         Text(
-                          'POS / WAREHOUSE',
+                          'POINT OF SALE',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -216,7 +216,7 @@ class _BrandMark extends StatelessWidget {
         borderRadius: BorderRadius.circular(9),
       ),
       child: Icon(
-        Icons.warehouse_rounded,
+        Icons.inventory_2_rounded,
         size: 19,
         color: scheme.onPrimary,
       ),

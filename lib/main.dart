@@ -1,7 +1,7 @@
 /**
  * <pre>
- * - Project   : iWarehouse - Glass Warehouse &amp; Mobile POS (ERP-Lite)
- * - Package   : com.ntaganira.heritier.iWarehouse
+ * - Project   : iPOS - Point of Sale
+ * - Package   : com.ntaganira.heritier.ipos
  * - File      : main.dart
  * - Date      : 2026. 10. 22.
  * - User      : NTAGANIRA H.
@@ -30,7 +30,7 @@ Future<void> main() async {
       FlutterErrorDetails(
         exception: error,
         stack: stackTrace,
-        library: 'iWarehouse bootstrap',
+        library: 'iPOS bootstrap',
         context: ErrorDescription('opening the encrypted local ledger'),
       ),
     );
@@ -49,7 +49,7 @@ class _BootFailureApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'iWarehouse POS',
+      title: 'iPOS',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       home: Scaffold(

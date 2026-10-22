@@ -1,13 +1,13 @@
 /**
  * <pre>
- * - Project   : iWarehouse - Glass Warehouse &amp; Mobile POS (ERP-Lite)
- * - Package   : com.ntaganira.heritier.iWarehouse.core.theme
+ * - Project   : iPOS - Point of Sale
+ * - Package   : com.ntaganira.heritier.ipos.core.theme
  * - File      : app_theme.dart
  * - Date      : 2026. 10. 22.
  * - User      : NTAGANIRA H.
  * - Desc      : Global Material 3 design system for the offline POS. Defines a
  *               native light palette and a high-contrast, low-strain dark
- *               palette for dim warehouses and counter environments, plus
+ *               palette for dim counters and retail environments, plus
  *               compact density, focus, input, and button styling shared by
  *               every module. All surfaces are driven through Theme.of so a
  *               runtime theme switch requires no screen rebuild logic.
@@ -16,7 +16,7 @@
 
 import 'package:flutter/material.dart';
 
-/// Centralized theme factory for the iWarehouse client.
+/// Centralized theme factory for the iPOS client.
 ///
 /// The dark palette intentionally avoids pure black and pure white: it reduces
 /// halation on glossy shop counters and keeps long shifts comfortable while
@@ -29,7 +29,7 @@ abstract final class AppTheme {
   /// Native light mode used in bright showrooms and back-office desks.
   static ThemeData get light => _build(Brightness.light);
 
-  /// High-contrast warehouse mode for dark shops, night shifts, and tablets
+  /// High-contrast terminal mode for dark shops, night shifts, and tablets
   /// mounted at the counter.
   static ThemeData get dark => _build(Brightness.dark);
 
@@ -190,7 +190,7 @@ abstract final class AppTheme {
 
   /// Builds the palette. Explicit surface-container roles are supplied because
   /// seeded schemes do not always produce enough separation for dense panels in
-  /// dark mode, especially on low-brightness warehouse displays.
+  /// dark mode, especially on low-brightness POS displays.
   static ColorScheme _schemeFor(Brightness brightness) {
     final seeded = ColorScheme.fromSeed(
       seedColor: _brandTeal,

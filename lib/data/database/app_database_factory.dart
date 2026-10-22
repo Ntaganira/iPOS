@@ -1,7 +1,7 @@
 /**
  * <pre>
- * - Project   : iWarehouse - Glass Warehouse &amp; Mobile POS (ERP-Lite)
- * - Package   : com.ntaganira.heritier.iWarehouse.data.database
+ * - Project   : iPOS - Point of Sale
+ * - Package   : com.ntaganira.heritier.ipos.data.database
  * - File      : app_database_factory.dart
  * - Date      : 2026. 10. 22.
  * - User      : NTAGANIRA H.
@@ -24,8 +24,8 @@ import 'app_database.dart';
 
 /// Opens the one encrypted till database for this installation.
 abstract final class AppDatabaseFactory {
-  static const String _directoryName = 'iWarehouse';
-  static const String _databaseFileName = 'iwarehouse_pos.sqlite3';
+  static const String _directoryName = 'iPOS';
+  static const String _databaseFileName = 'ipos.sqlite3';
 
   /// Creates the encrypted database, runs migrations, and verifies it can be
   /// queried before returning.

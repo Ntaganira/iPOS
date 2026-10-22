@@ -1,7 +1,7 @@
 /**
  * <pre>
- * - Project   : iWarehouse - Glass Warehouse &amp; Mobile POS (ERP-Lite)
- * - Package   : com.ntaganira.heritier.iWarehouse
+ * - Project   : iPOS - Point of Sale
+ * - Package   : com.ntaganira.heritier.ipos
  * - File      : app.dart
  * - Date      : 2026. 10. 22.
  * - User      : NTAGANIRA H.
@@ -9,7 +9,7 @@
  *               repositories, register controllers, theme mode, and the root
  *               MaterialApp. Controllers are created once for the process and
  *               disposed with the app; no screen owns database lifecycle. Dark
- *               warehouse mode is the default, with a one-tap light-mode
+ *               POS mode is the default, with a one-tap light-mode
  *               switch in the module rail.
  * </pre>
  */
@@ -79,7 +79,7 @@ class _PosAppState extends State<PosApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'iWarehouse POS',
+      title: 'iPOS',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
