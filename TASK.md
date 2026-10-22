@@ -114,7 +114,7 @@ or CI-only work).
 - [x] Add corporate file-header signature blocks to all authored Dart modules and pubspec.
 - [x] Add this tracker and keep checklist flags current.
 - [x] Run `flutter analyze` and `flutter test` clean.
-- [ ] Run Android, iOS, Windows, and macOS smoke builds on their native runners.
+- [ ] Run Android, iOS, Windows, macOS, and Linux smoke builds on their native runners.
 - [ ] Add crash reporting with secret redaction and structured checkout audit logs.
 - [ ] Add rate/disk-full handling, database key loss UX, and disaster-recovery runbook.
 - [ ] Add accessibility pass (contrast audit, large text, screen reader labels).
