@@ -64,6 +64,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  fonts:
+    - family: RobotoMono
+      fonts:
+        - asset: assets/fonts/RobotoMono-Regular.ttf
 
 # Select the SQLCipher community build of SQLite. package:sqlite3 downloads and
 # verifies the matching native artifact for Android, iOS, macOS, Windows, and

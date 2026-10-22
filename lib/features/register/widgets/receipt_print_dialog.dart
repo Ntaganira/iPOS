@@ -145,7 +145,7 @@ class _ThermalPreview extends StatelessWidget {
           child: SelectableText(
             EscPosTicketBuilder.preview(document, paper: paper),
             style: const TextStyle(
-              fontFamily: 'monospace',
+              fontFamily: 'RobotoMono',
               fontSize: 10.5,
               height: 1.32,
               color: Color(0xFF111111),

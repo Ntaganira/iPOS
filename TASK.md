@@ -97,10 +97,10 @@ or CI-only work).
 - [x] Add short-window handling: scrollable checkout below 620 px and a horizontally
       scrollable YMM strip on narrow phones, preventing RenderFlex overflow.
 - [x] Replace scaffolded Inventory Registry / Customers / Settings modules with full screens.
-- [ ] Add barcode scanner wedge tuning, hotkey customization, and cash-drawer/receipt printing.
+- [x] Add barcode scanner wedge tuning, hotkey customization, and cash-drawer/receipt printing.
 - [x] Add responsive widget smoke tests for phone portrait/landscape, tablet, 1024, 1280,
       and 1920 px layouts, including the checkout end drawer.
-- [ ] Add golden snapshots and interaction tests for cart mutation and receipt flows.
+- [x] Add golden snapshots and interaction tests for cart mutation and receipt flows.
 
 ## 6. Separate Web Back Office (Online-Only)
 
@@ -141,4 +141,4 @@ or CI-only work).
 - [x] Add runtime hotkey binding from persisted settings for search and checkout.
 - [x] Add configurable scanner wedge timing through a dedicated key-burst detector in the register search field.
 - [x] Wire the explicit admin key-rotation ceremony to the maintenance UI with restart guidance.
-- [ ] Add golden snapshots and cart-mutation/receipt interaction tests.
+- [x] Add golden snapshots and cart-mutation/receipt interaction tests.
