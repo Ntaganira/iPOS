@@ -17,6 +17,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../core/utils/money.dart';
+import '../../data/models/cart_draft.dart';
 import '../../data/models/cart_line.dart';
 import '../../data/models/catalog_part.dart';
 import '../../data/models/customer_option.dart';
@@ -216,6 +217,53 @@ class CheckoutController extends ChangeNotifier {
     _lines.clear();
     _error = null;
     _safeNotify();
+  }
+
+  /// Captures the current cart for encrypted draft storage. Returns null when
+  /// there is nothing worth restoring.
+  CartDraft? draftSnapshot({DateTime? now}) {
+    if (_lines.isEmpty) {
+      return null;
+    }
+    return CartDraft(
+      lines: List<CartLine>.unmodifiable(_lines),
+      customerId: _selectedCustomer?.id,
+      paymentMethod: _paymentMethod.wireValue,
+      updatedAt: (now ?? DateTime.now()).toUtc(),
+    );
+  }
+
+  /// Replaces the cart with a persisted draft after sign-in.
+  void restoreDraft(CartDraft draft, {CustomerOption? customer}) {
+    if (_submitting || draft.isEmpty) {
+      return;
+    }
+    _lines
+      ..clear()
+      ..addAll(draft.lines);
+    _selectedCustomer = customer;
+    _paymentMethod = PaymentMethod.values.firstWhere(
+      (method) => method.wireValue == draft.paymentMethod,
+      orElse: () => PaymentMethod.cash,
+    );
+    _error = null;
+    _safeNotify();
+  }
+
+  /// Clears all sale-scoped state when an operator signs out.
+  void resetSession() {
+    final hadState =
+        _lines.isNotEmpty ||
+        _selectedCustomer != null ||
+        _paymentMethod != PaymentMethod.cash ||
+        _error != null;
+    _lines.clear();
+    _selectedCustomer = null;
+    _paymentMethod = PaymentMethod.cash;
+    _error = null;
+    if (hadState) {
+      _safeNotify();
+    }
   }
 
   void selectCustomer(CustomerOption? customer) {

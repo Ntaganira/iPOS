@@ -15,7 +15,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ipos/core/printing/a4_receipt_pdf.dart';
 import 'package:ipos/core/printing/esc_pos_printer.dart';
+import 'package:ipos/core/printing/receipt_factory.dart';
+import 'package:ipos/core/printing/receipt_paper.dart';
+import 'package:ipos/data/models/cart_line.dart';
+import 'package:ipos/data/models/catalog_part.dart';
 import 'package:ipos/data/repositories/checkout_repository.dart';
 
 ReceiptDocument _document() {
@@ -93,4 +98,48 @@ void main() {
       expect(latin1.decode(bytes), contains('INV-20261022-0001'));
     },
   );
+
+  test('58 mm preview stays inside 32 columns and marks proformas', () {
+    final document = buildProformaDocument(
+      storeName: 'iPOS Parts Counter',
+      lines: [
+        CartLine(
+          part: CatalogPart(
+            id: 'part-1',
+            sku: 'SKU-100',
+            partName: 'Brake Pad Front',
+            retailPriceCents: 12500,
+            updatedAt: DateTime.utc(2026, 10, 20),
+          ),
+          quantity: 2,
+        ),
+      ],
+      taxRateBps: 1800,
+      issuedAt: DateTime.utc(2026, 10, 22, 9, 30),
+    );
+
+    final preview = EscPosTicketBuilder.preview(
+      document,
+      paper: ReceiptPaperSize.mm58,
+    );
+
+    expect(document.kind, ReceiptKind.proforma);
+    expect(
+      document.invoiceNumber,
+      matches(RegExp(r'^PRO-20261022-\d{4}$')),
+    );
+    expect(document.totalCents, 29500);
+    expect(preview, contains('PROFORMA'));
+    expect(preview, isNot(contains('Paid')));
+    for (final line in preview.split('\n')) {
+      expect(line.length, lessThanOrEqualTo(32), reason: line);
+    }
+  });
+
+  test('A4 renderer produces a PDF attachment', () async {
+    final bytes = await A4ReceiptPdfBuilder.build(_document());
+
+    expect(bytes.length, greaterThan(1000));
+    expect(latin1.decode(bytes.take(4).toList()), '%PDF');
+  });
 }

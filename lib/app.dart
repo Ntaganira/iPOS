@@ -22,11 +22,13 @@ import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'data/database/app_database.dart';
 import 'data/database/database_maintenance_service.dart';
+import 'data/models/customer_option.dart';
 import 'data/repositories/audit_repository.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/catalog_repository.dart';
 import 'data/repositories/checkout_repository.dart';
 import 'data/repositories/customer_repository.dart';
+import 'data/repositories/draft_repository.dart';
 import 'data/repositories/inventory_repository.dart';
 import 'data/repositories/notification_repository.dart';
 import 'data/repositories/settings_repository.dart';
@@ -54,7 +56,7 @@ class PosApp extends StatefulWidget {
   State<PosApp> createState() => _PosAppState();
 }
 
-class _PosAppState extends State<PosApp> {
+class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
   late final AuthRepository _authRepository;
   late final SettingsRepository _settingsRepository;
   late final CatalogRepository _catalogRepository;
@@ -65,6 +67,7 @@ class _PosAppState extends State<PosApp> {
   late final ShiftRepository _shiftRepository;
   late final InventoryRepository _inventoryRepository;
   late final CustomerRepository _customerRepository;
+  late final DraftRepository _draftRepository;
 
   late final AuthController _authController;
   late final SettingsController _settingsController;
@@ -72,6 +75,11 @@ class _PosAppState extends State<PosApp> {
   late final CatalogController _catalogController;
   late final CheckoutController _checkoutController;
 
+  final GlobalKey<ScaffoldMessengerState> _messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+  Timer? _draftTimer;
+  String? _draftUserId;
+  bool _restoringDraft = false;
   bool _initialized = false;
 
   @override
@@ -114,6 +122,7 @@ class _PosAppState extends State<PosApp> {
       widget.database,
       actorProvider: () => _authController.auditActor,
     );
+    _draftRepository = DraftRepository(widget.database);
 
     _authController = AuthController(repository: _authRepository);
     _settingsController = SettingsController(repository: _settingsRepository);
@@ -123,6 +132,9 @@ class _PosAppState extends State<PosApp> {
     _catalogController = CatalogController(repository: _catalogRepository);
     _checkoutController = CheckoutController(repository: _checkoutRepository);
     _settingsController.addListener(_applyRuntimeSettings);
+    _checkoutController.addListener(_scheduleDraftSave);
+    _authController.addListener(_handleAuthChanged);
+    WidgetsBinding.instance.addObserver(this);
 
     unawaited(_bootstrap());
   }
@@ -143,8 +155,107 @@ class _PosAppState extends State<PosApp> {
     _checkoutController.setTaxRateBps(_settingsController.settings.taxRateBps);
   }
 
+  void _handleAuthChanged() {
+    final userId = _authController.currentUser?.id;
+    if (userId == null) {
+      final previous = _draftUserId;
+      if (previous != null) {
+        _draftTimer?.cancel();
+        unawaited(_flushDraft(previous));
+        _draftUserId = null;
+        _checkoutController.resetSession();
+      }
+      return;
+    }
+    if (userId == _draftUserId) {
+      return;
+    }
+    _draftUserId = userId;
+    unawaited(_restoreDraft(userId));
+  }
+
+  void _scheduleDraftSave() {
+    final userId = _draftUserId;
+    if (userId == null ||
+        _restoringDraft ||
+        _authController.currentUser == null) {
+      return;
+    }
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 300), () {
+      unawaited(_flushDraft(userId));
+    });
+  }
+
+  Future<void> _flushDraft(String userId) async {
+    final draft = _checkoutController.draftSnapshot();
+    try {
+      if (draft == null) {
+        await _draftRepository.clear(userId);
+      } else {
+        await _draftRepository.save(userId, draft);
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Draft save failed: $error\n$stackTrace');
+    }
+  }
+
+  Future<void> _restoreDraft(String userId) async {
+    _restoringDraft = true;
+    try {
+      final draft = await _draftRepository.load(userId);
+      if (!mounted ||
+          draft == null ||
+          _draftUserId != userId ||
+          _checkoutController.lines.isNotEmpty) {
+        return;
+      }
+      final customerId = draft.customerId;
+      CustomerOption? customer;
+      if (customerId != null) {
+        for (final option in _checkoutController.customers) {
+          if (option.id == customerId) {
+            customer = option;
+            break;
+          }
+        }
+      }
+      _checkoutController.restoreDraft(draft, customer: customer);
+      final messenger = _messengerKey.currentState;
+      final messengerContext = messenger?.context;
+      if (messenger != null &&
+          messengerContext != null &&
+          messengerContext.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(messengerContext).draftRestored),
+          ),
+        );
+      }
+    } finally {
+      _restoringDraft = false;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      final userId = _draftUserId;
+      if (userId != null) {
+        _draftTimer?.cancel();
+        unawaited(_flushDraft(userId));
+      }
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _draftTimer?.cancel();
+    _checkoutController.removeListener(_scheduleDraftSave);
+    _authController.removeListener(_handleAuthChanged);
     _settingsController.removeListener(_applyRuntimeSettings);
     _catalogController.dispose();
     _checkoutController.dispose();
@@ -207,6 +318,7 @@ class _PosAppState extends State<PosApp> {
           locale: Locale(settings.languageCode),
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: iposLocalizationsDelegates,
+          scaffoldMessengerKey: _messengerKey,
           themeAnimationDuration: const Duration(milliseconds: 160),
           home: _home(),
         );

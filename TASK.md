@@ -137,7 +137,7 @@ or CI-only work).
 - [x] Add print preview and paper selection for A4 PDF, 80 mm thermal, and 58 mm mini/mobile printers.
 - [x] Add proforma invoice printing from the live cart without deducting stock or writing an invoice.
 - [x] Add SMTP email configuration under Settings and send invoices/proformas as a PDF attachment or plain text.
-- [ ] Persist and restore in-progress cart drafts across sign-out, shutdown, or accidental exit.
+- [x] Persist and restore in-progress cart drafts across sign-out, shutdown, or accidental exit.
 - [x] Add runtime hotkey binding from persisted settings for search and checkout.
 - [ ] Add configurable scanner wedge timing (minimum scan length is enforced; timeout still needs a dedicated wedge detector).
 - [ ] Wire the explicit admin key-rotation ceremony to the maintenance UI with restart guidance.
