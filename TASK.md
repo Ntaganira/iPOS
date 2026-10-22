@@ -25,8 +25,14 @@ or CI-only work).
       process-wide repository/controller ownership, dark warehouse default, and theme toggle.
 - [x] Run `flutter pub get` and `dart run build_runner build` with the installed
       toolchain; `app_database.g.dart` is generated and committed as the reviewable schema artifact.
-- [ ] Add native runner configuration: Android `minSdk 23`, `android:allowBackup="false"`,
-      iOS/macOS Keychain Sharing entitlements, Windows C++ ATL build tools.
+- [x] Generate Android, iOS, Windows, macOS, and Linux runner scaffolding, set the visible
+      iWarehouse identity, enforce Android `minSdk 23`, and disable Android auto-backup so the
+      encrypted vault is never restored without its Keystore key. Web is unsupported because
+      SQLCipher uses `dart:ffi`.
+- [ ] Add iOS/macOS Keychain Sharing entitlements and validate secure storage on each runner.
+- [ ] Install Windows "Desktop development with C++" components and enable Developer Mode for
+      plugin symlinks; accept Android SDK licenses before native smoke builds.
+- [ ] Verify SQLCipher native assets on Android, iOS, Windows, macOS, and Linux.
 - [ ] Configure release signing, obfuscation, and CI artifact signing per platform.
 
 ## 2. Secure Key Management
@@ -35,7 +41,7 @@ or CI-only work).
 - [x] Generate keys with `Random.secure()` (32 bytes, 64-char hex, no passphrase KDF at rest).
 - [x] Fail closed if an existing key is malformed; never silently rotate a live database key.
 - [x] Configure platform secure-storage options (Android RSA-OAEP/AES-GCM; macOS keychain mode).
-- [x] Document hardware-backed guarantees and platform limitations in source Doxygen/DartDoc.
+- [x] Document OS-protected key guarantees and platform limitations in source Doxygen/DartDoc.
 - [ ] Add migration ceremony for key rotation (`PRAGMA rekey`) behind an explicit admin action.
 - [ ] Add backup/restore playbook proving the encrypted file is unusable without the platform key.
 
