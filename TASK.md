@@ -73,7 +73,7 @@ or CI-only work).
 - [x] Snapshot SKU, description, brand, unit price, tax rate, and line totals on invoice lines.
 - [x] Add in-memory Drift integration tests for YMM filtering, soft deletes, exact lookup,
       transaction rollback, invoice sequencing, line snapshots, and stock movements.
-- [ ] Add repository tests against a keyed in-memory SQLCipher database.
+- [x] Add repository tests against a keyed in-memory SQLCipher database.
 - [x] Add sync outbox drain with retry backoff, server-conflict overwrite, cursor persistence, and failure notifications.
 - [ ] Add back-office reconciliation adapters for serving push/pull and resolving conflicts.
 
