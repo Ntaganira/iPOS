@@ -180,9 +180,7 @@ abstract final class AppTheme {
           color: scheme.onInverseSurface,
         ),
         actionTextColor: scheme.inversePrimary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         elevation: 3,
       ),
     );

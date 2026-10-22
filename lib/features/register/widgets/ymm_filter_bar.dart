@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_layout.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 /// Dense YMM selector strip.
 class YmmFilterBar extends StatelessWidget {
@@ -49,10 +50,11 @@ class YmmFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final children = <Widget>[
       _CompactDropdown<String>(
-        label: 'Make',
-        hint: 'All makes',
+        label: l10n.makeLabel,
+        hint: l10n.allMakes,
         width: 148,
         value: selectedMake,
         items: makes,
@@ -60,8 +62,8 @@ class YmmFilterBar extends StatelessWidget {
         onChanged: onMakeChanged,
       ),
       _CompactDropdown<String>(
-        label: 'Model',
-        hint: 'All models',
+        label: l10n.modelLabel,
+        hint: l10n.allModels,
         width: 172,
         value: selectedModel,
         items: models,
@@ -70,8 +72,8 @@ class YmmFilterBar extends StatelessWidget {
         onChanged: onModelChanged,
       ),
       _CompactDropdown<int>(
-        label: 'Year',
-        hint: 'All years',
+        label: l10n.yearLabel,
+        hint: l10n.allYears,
         width: 104,
         value: selectedYear,
         items: years,
@@ -82,7 +84,7 @@ class YmmFilterBar extends StatelessWidget {
       Padding(
         padding: const EdgeInsets.only(bottom: 1),
         child: IconButton(
-          tooltip: 'Reset search and YMM filters',
+          tooltip: l10n.resetFilters,
           onPressed: hasActiveFilter ? onReset : null,
           icon: const Icon(Icons.filter_alt_off_outlined, size: 19),
           style: IconButton.styleFrom(

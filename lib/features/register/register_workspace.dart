@@ -18,9 +18,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/input/hotkey_parser.dart';
 import '../../core/theme/app_layout.dart';
 import '../../core/utils/money.dart';
 import '../../data/models/catalog_part.dart';
+import '../../data/models/terminal_settings.dart';
+import '../../l10n/generated/app_localizations.dart';
 import 'catalog_controller.dart';
 import 'checkout_controller.dart';
 import 'widgets/catalog_table.dart';
@@ -33,10 +36,14 @@ class RegisterWorkspace extends StatefulWidget {
     required this.catalogController,
     required this.checkoutController,
     this.onOpenCheckout,
+    this.settings,
   });
 
   final CatalogController catalogController;
   final CheckoutController checkoutController;
+
+  /// Persisted scanner timing and hotkey labels.
+  final TerminalSettings? settings;
 
   /// Non-null on tablet layouts where checkout lives in an end drawer.
   final VoidCallback? onOpenCheckout;
@@ -92,6 +99,10 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
     final exactMatches = results
         .where((part) => part.matchesNumber(value))
         .toList(growable: false);
+    final minLength = widget.settings?.scannerMinLength ?? 4;
+    if (exactMatches.isEmpty && value.trim().length < minLength) {
+      return;
+    }
     final CatalogPart? candidate = exactMatches.length == 1
         ? exactMatches.single
         : (results.length == 1 ? results.single : null);
@@ -103,6 +114,7 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
 
   void _addPart(CatalogPart part) {
     widget.checkoutController.addPart(part);
+    final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     messenger
       ..hideCurrentSnackBar()
@@ -110,15 +122,17 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
         SnackBar(
           duration: const Duration(milliseconds: 900),
           content: Text(
-            '${part.partName} · ${Money.formatCents(part.retailPriceCents)} '
-            'added',
+            l10n.addedToCart(
+              part.partName,
+              Money.formatCents(part.retailPriceCents),
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           action: widget.onOpenCheckout == null
               ? null
               : SnackBarAction(
-                  label: 'VIEW CART',
+                  label: l10n.viewCart.toUpperCase(),
                   onPressed: widget.onOpenCheckout!,
                 ),
         ),
@@ -147,18 +161,29 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final settings = widget.settings;
+    final searchLabel = settings?.searchHotkey ?? 'F2';
+    final checkoutLabel = settings?.checkoutHotkey ?? 'F3';
+    final searchKey =
+        parseHotkey(searchLabel) ??
+        const SingleActivator(LogicalKeyboardKey.f2);
+    final checkoutKey = parseHotkey(checkoutLabel);
 
     return Focus(
       autofocus: true,
       child: CallbackShortcuts(
         bindings: {
-          const SingleActivator(LogicalKeyboardKey.f2): () {
+          searchKey: () {
             _searchFocusNode.requestFocus();
             _searchController.selection = TextSelection(
               baseOffset: 0,
               extentOffset: _searchController.text.length,
             );
           },
+          if (checkoutKey != null &&
+              checkoutKey != searchKey &&
+              widget.onOpenCheckout != null)
+            checkoutKey: widget.onOpenCheckout!,
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -176,9 +201,7 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   color: scheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(
-                    AppLayout.panelRadius,
-                  ),
+                  borderRadius: BorderRadius.circular(AppLayout.panelRadius),
                   border: Border.all(color: scheme.outlineVariant),
                 ),
                 child: ListenableBuilder(
@@ -204,8 +227,9 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
                             enableSuggestions: false,
                             style: theme.textTheme.bodyMedium,
                             decoration: InputDecoration(
-                              hintText:
-                                  'Scan or type SKU, OEM number, or part name…',
+                              hintText: AppLocalizations.of(
+                                context,
+                              ).searchPartsHint,
                               prefixIcon: const Icon(
                                 Icons.search_rounded,
                                 size: 19,
@@ -213,7 +237,9 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
                               suffixIcon: _searchController.text.isEmpty
                                   ? null
                                   : IconButton(
-                                      tooltip: 'Clear search',
+                                      tooltip: AppLocalizations.of(
+                                        context,
+                                      ).clearSearch,
                                       onPressed: _clearSearch,
                                       icon: const Icon(
                                         Icons.close_rounded,
@@ -233,12 +259,10 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
                             selectedModel: catalog.selectedModel,
                             selectedYear: catalog.selectedYear,
                             hasActiveFilter: catalog.hasAnyFilter,
-                            onMakeChanged: (value) => unawaited(
-                              catalog.selectMake(value),
-                            ),
-                            onModelChanged: (value) => unawaited(
-                              catalog.selectModel(value),
-                            ),
+                            onMakeChanged: (value) =>
+                                unawaited(catalog.selectMake(value)),
+                            onModelChanged: (value) =>
+                                unawaited(catalog.selectModel(value)),
                             onYearChanged: (value) =>
                                 unawaited(catalog.selectYear(value)),
                             onReset: () => unawaited(_resetAll()),
@@ -257,6 +281,7 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
                         _CatalogStatusBar(
                           resultCount: catalog.results.length,
                           loading: catalog.loading,
+                          searchHotkey: searchLabel,
                         ),
                       ],
                     );
@@ -272,10 +297,7 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
 }
 
 class _WorkspaceHeader extends StatelessWidget {
-  const _WorkspaceHeader({
-    required this.cartCount,
-    this.onOpenCheckout,
-  });
+  const _WorkspaceHeader({required this.cartCount, this.onOpenCheckout});
 
   final int cartCount;
   final VoidCallback? onOpenCheckout;
@@ -284,6 +306,7 @@ class _WorkspaceHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Row(
       children: [
@@ -291,10 +314,10 @@ class _WorkspaceHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Front Counter', style: theme.textTheme.titleLarge),
+              Text(l10n.frontCounter, style: theme.textTheme.titleLarge),
               const SizedBox(height: 1),
               Text(
-                'Offline register · YMM fitment · encrypted local invoices',
+                l10n.frontCounterSubtitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -313,7 +336,7 @@ class _WorkspaceHeader extends StatelessWidget {
               label: Text('$cartCount'),
               child: const Icon(Icons.shopping_cart_outlined, size: 18),
             ),
-            label: const Text('Cart'),
+            label: Text(l10n.cart),
           ),
         ],
       ],
@@ -326,50 +349,46 @@ class _CatalogStatusBar extends StatelessWidget {
   const _CatalogStatusBar({
     required this.resultCount,
     required this.loading,
+    required this.searchHotkey,
   });
 
   final int resultCount;
   final bool loading;
+  final String searchHotkey;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       height: 30,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: scheme.surfaceContainer,
-        border: Border(
-          top: BorderSide(color: scheme.outlineVariant),
-        ),
+        border: Border(top: BorderSide(color: scheme.outlineVariant)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           return Row(
             children: [
               Text(
-                loading
-                    ? 'Searching…'
-                    : '$resultCount part${resultCount == 1 ? '' : 's'}',
+                loading ? l10n.searching : l10n.resultsCount(resultCount),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: scheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: scheme.outlineVariant),
                 ),
                 child: Text(
-                  'LOCAL',
+                  l10n.localOnly.toUpperCase(),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: scheme.onSurfaceVariant,
                     fontSize: 9,
@@ -383,7 +402,7 @@ class _CatalogStatusBar extends StatelessWidget {
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      'F2 search · Enter adds top match',
+                      l10n.searchShortcutKey(searchHotkey),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(

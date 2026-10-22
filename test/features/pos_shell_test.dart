@@ -24,6 +24,8 @@ import 'package:ipos/data/repositories/checkout_repository.dart';
 import 'package:ipos/features/register/catalog_controller.dart';
 import 'package:ipos/features/register/checkout_controller.dart';
 import 'package:ipos/features/shell/pos_shell.dart';
+import 'package:ipos/l10n/generated/app_localizations.dart';
+import 'package:ipos/l10n/rw_localizations.dart';
 
 void main() {
   late AppDatabase database;
@@ -97,9 +99,12 @@ void main() {
     await database.close();
   });
 
-  Widget buildApp() {
+  Widget buildApp({Locale locale = const Locale('en')}) {
     return MaterialApp(
       theme: AppTheme.dark,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: iposLocalizationsDelegates,
       home: PosShell(
         catalogController: catalogController,
         checkoutController: checkoutController,
@@ -109,11 +114,15 @@ void main() {
     );
   }
 
-  Future<void> pumpAt(WidgetTester tester, Size size) async {
+  Future<void> pumpAt(
+    WidgetTester tester,
+    Size size, {
+    Locale locale = const Locale('en'),
+  }) async {
     tester.view
       ..physicalSize = size
       ..devicePixelRatio = 1.0;
-    await tester.pumpWidget(buildApp());
+    await tester.pumpWidget(buildApp(locale: locale));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
   }
@@ -160,6 +169,27 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Checkout'), findsOneWidget);
     expect(find.text('CUSTOMER ACCOUNT'), findsOneWidget);
+  });
+
+  testWidgets('register renders in every locale without overflow', (
+    tester,
+  ) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    for (final locale in AppLocalizations.supportedLocales) {
+      for (final size in const <Size>[Size(390, 844), Size(1024, 700)]) {
+        await pumpAt(tester, size, locale: locale);
+        expect(
+          tester.takeException(),
+          isNull,
+          reason:
+              'Unexpected layout exception for ${locale.languageCode} '
+              'at ${size.width}x${size.height}',
+        );
+        expect(find.byType(Localizations), findsWidgets);
+      }
+    }
   });
 
   testWidgets('inline checkout is present on desktop widths', (tester) async {

@@ -14,6 +14,7 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+    - test/generated_migrations/**
     - build/**
     - android/**
     - ios/**

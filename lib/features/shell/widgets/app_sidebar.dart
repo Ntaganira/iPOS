@@ -17,6 +17,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_layout.dart';
+import '../../../l10n/generated/app_localizations.dart';
+import '../module_labels.dart';
 import '../pos_module.dart';
 
 /// Left navigation rail with an expanded and collapsed presentation.
@@ -30,6 +32,7 @@ class AppSidebar extends StatelessWidget {
     required this.isDarkMode,
     required this.onToggleTheme,
     this.showCollapseAction = true,
+    this.modules = PosModule.values,
   });
 
   final bool expanded;
@@ -39,11 +42,13 @@ class AppSidebar extends StatelessWidget {
   final bool isDarkMode;
   final VoidCallback onToggleTheme;
   final bool showCollapseAction;
+  final List<PosModule> modules;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return AnimatedContainer(
       duration: AppLayout.layoutAnimation,
@@ -73,7 +78,7 @@ class AppSidebar extends StatelessWidget {
                   primary: false,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
-                    for (final module in PosModule.values)
+                    for (final module in modules)
                       _SidebarDestination(
                         module: module,
                         expanded: showLabels,
@@ -95,8 +100,8 @@ class AppSidebar extends StatelessWidget {
                         children: [
                           _SidebarIconButton(
                             tooltip: isDarkMode
-                                ? 'Switch to light mode'
-                                : 'Switch to dark mode',
+                                ? l10n.switchToLight
+                                : l10n.switchToDark,
                             icon: isDarkMode
                                 ? Icons.light_mode_outlined
                                 : Icons.dark_mode_outlined,
@@ -105,7 +110,7 @@ class AppSidebar extends StatelessWidget {
                           const Spacer(),
                           if (showCollapseAction)
                             _SidebarIconButton(
-                              tooltip: 'Collapse module rail',
+                              tooltip: l10n.collapseSidebar,
                               icon: Icons.keyboard_double_arrow_left_rounded,
                               onPressed: onToggleExpanded,
                             ),
@@ -115,8 +120,8 @@ class AppSidebar extends StatelessWidget {
                         children: [
                           _SidebarIconButton(
                             tooltip: isDarkMode
-                                ? 'Switch to light mode'
-                                : 'Switch to dark mode',
+                                ? l10n.switchToLight
+                                : l10n.switchToDark,
                             icon: isDarkMode
                                 ? Icons.light_mode_outlined
                                 : Icons.dark_mode_outlined,
@@ -125,7 +130,7 @@ class AppSidebar extends StatelessWidget {
                           const SizedBox(height: 4),
                           if (showCollapseAction)
                             _SidebarIconButton(
-                              tooltip: 'Expand module rail',
+                              tooltip: l10n.expandSidebar,
                               icon: Icons.keyboard_double_arrow_right_rounded,
                               onPressed: onToggleExpanded,
                             ),
@@ -178,12 +183,12 @@ class _BrandHeader extends StatelessWidget {
                         ),
                         const SizedBox(height: 1),
                         Text(
-                          'POINT OF SALE',
+                          AppLocalizations.of(context).appTagline.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: scheme.onSurfaceVariant,
-                            letterSpacing: 1.0,
+                            letterSpacing: 0.6,
                           ),
                         ),
                       ],
@@ -215,11 +220,7 @@ class _BrandMark extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(9),
       ),
-      child: Icon(
-        Icons.inventory_2_rounded,
-        size: 19,
-        color: scheme.onPrimary,
-      ),
+      child: Icon(Icons.inventory_2_rounded, size: 19, color: scheme.onPrimary),
     );
   }
 }
@@ -243,6 +244,7 @@ class _SidebarDestination extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
     final foreground = selected
         ? scheme.onPrimaryContainer
         : scheme.onSurfaceVariant;
@@ -252,13 +254,10 @@ class _SidebarDestination extends StatelessWidget {
     final content = expanded
         ? Row(
             children: [
-              SizedBox(
-                width: 38,
-                child: Center(child: icon),
-              ),
+              SizedBox(width: 38, child: Center(child: icon)),
               Expanded(
                 child: Text(
-                  module.shortLabel,
+                  moduleShortLabel(l10n, module),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -284,7 +283,7 @@ class _SidebarDestination extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Tooltip(
-        message: expanded ? '' : module.label,
+        message: expanded ? '' : moduleLabel(l10n, module),
         child: Material(
           color: selected ? scheme.primaryContainer : Colors.transparent,
           borderRadius: BorderRadius.circular(AppLayout.controlRadius),
@@ -313,6 +312,7 @@ class _LocalVaultBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     final icon = Icon(
       Icons.lock_outline_rounded,
@@ -324,7 +324,7 @@ class _LocalVaultBadge extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Tooltip(
-          message: 'Encrypted local vault is active',
+          message: l10n.encryptedVaultActive,
           child: SizedBox(height: 32, child: Center(child: icon)),
         ),
       );
@@ -348,7 +348,7 @@ class _LocalVaultBadge extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Offline-ready',
+                    l10n.offlineReady,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelMedium?.copyWith(
@@ -357,7 +357,7 @@ class _LocalVaultBadge extends StatelessWidget {
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    'Encrypted local vault',
+                    l10n.encryptedLocalVault,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(

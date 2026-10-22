@@ -1,0 +1,397 @@
+{
+  "@@locale": "en",
+  "appTitle": "iPOS",
+  "appTagline": "Offline parts counter",
+  "navRegister": "Register",
+  "navInventory": "Inventory",
+  "navCustomers": "Customers",
+  "navSettings": "Settings",
+  "expandSidebar": "Expand navigation",
+  "collapseSidebar": "Collapse navigation",
+  "switchToLight": "Switch to light mode",
+  "switchToDark": "Switch to dark mode",
+  "loggedInAs": "Signed in as {name}",
+  "@loggedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "logout": "Sign out",
+  "searchHint": "Search SKU, OEM number, or description",
+  "searchHelp": "Scan a part or type at least one character",
+  "noParts": "No matching parts",
+  "noPartsHint": "Adjust the search or vehicle filters, or add the part in Inventory.",
+  "loadingCatalog": "Loading catalog…",
+  "makeLabel": "Make",
+  "allMakes": "All makes",
+  "modelLabel": "Model",
+  "allModels": "All models",
+  "yearLabel": "Year",
+  "allYears": "All years",
+  "clearFilters": "Clear filters",
+  "checkoutTitle": "Checkout",
+  "newSale": "New sale",
+  "itemsCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@itemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cartEmpty": "Cart is empty",
+  "cartHint": "Scan a part, press Enter for an unambiguous match, or tap a catalog row to begin.",
+  "customerLabel": "Customer",
+  "walkInCustomer": "Walk-in customer",
+  "subtotal": "Subtotal",
+  "vatRate": "VAT {rate}",
+  "@vatRate": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "coreDeposits": "Core deposits (refundable)",
+  "total": "TOTAL",
+  "paymentMethod": "PAYMENT",
+  "cash": "Cash",
+  "card": "Card",
+  "mobile": "Mobile",
+  "charge": "Charge",
+  "offlineCommit": "Offline commit · invoice + lines + stock ledger are atomic",
+  "saleCompleted": "Sale completed",
+  "savedLocal": "Saved to the encrypted local ledger. Invoice lines, stock movements, and the audit event were committed together.",
+  "inventoryTitle": "Inventory registry",
+  "inventorySubtitle": "Products, prices, stock, and selling units",
+  "addProduct": "Add product",
+  "editProduct": "Edit product",
+  "searchInventory": "Search inventory",
+  "noProducts": "No products yet",
+  "stockOnHand": "On hand: {count}",
+  "@stockOnHand": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lowStock": "Low stock",
+  "adjustStock": "Adjust stock",
+  "stockAdjustment": "Stock adjustment",
+  "adjustmentReason": "Reason",
+  "quantityDelta": "Quantity change",
+  "binLocation": "Bin / shelf",
+  "sku": "SKU",
+  "description": "Description",
+  "brand": "Brand",
+  "retailPrice": "Retail price",
+  "tradePrice": "Trade price",
+  "coreFee": "Core / deposit",
+  "baseUnit": "Base unit",
+  "sellingUnits": "Selling units",
+  "addUnit": "Add selling unit",
+  "unitLabel": "Unit label",
+  "conversionFactor": "Base units per unit",
+  "initialStock": "Opening stock",
+  "movements": "Stock movements",
+  "customersTitle": "Customers",
+  "customersSubtitle": "Trade accounts and cached balances",
+  "addCustomer": "Add customer",
+  "editCustomer": "Edit customer",
+  "searchCustomers": "Search customers",
+  "noCustomers": "No customer accounts yet",
+  "customerName": "Customer name",
+  "phone": "Phone",
+  "taxId": "Tax ID",
+  "balance": "Balance",
+  "settingsTitle": "Settings",
+  "settingsSubtitle": "Terminal, security, printing, and sync",
+  "storeName": "Store name",
+  "language": "Language",
+  "languageEnglish": "English",
+  "languageFrench": "French",
+  "languageKinyarwanda": "Kinyarwanda",
+  "appearance": "Appearance",
+  "darkMode": "Dark POS mode",
+  "taxRate": "VAT rate (%)",
+  "scannerSettings": "Barcode scanner",
+  "scannerMinLength": "Minimum scan length",
+  "scannerTimeout": "Inter-key timeout (ms)",
+  "hotkeys": "Hotkeys",
+  "searchHotkey": "Search hotkey",
+  "checkoutHotkey": "Checkout hotkey",
+  "printerSettings": "Receipt printer",
+  "printerHost": "Printer host",
+  "printerPort": "Printer port",
+  "syncSettings": "Back-office sync",
+  "syncEndpoint": "Sync endpoint",
+  "syncToken": "Sync token",
+  "saveSettings": "Save settings",
+  "settingsSaved": "Settings saved",
+  "usersTitle": "Users and roles",
+  "addUser": "Add user",
+  "editUser": "Edit user",
+  "roleLabel": "Role",
+  "pinLabel": "PIN",
+  "active": "Active",
+  "inactive": "Inactive",
+  "mustChangePin": "Must change PIN",
+  "resetPin": "Reset PIN",
+  "roleAdmin": "Administrator",
+  "roleManager": "Manager",
+  "roleCashier": "Cashier",
+  "shiftClose": "Shift close",
+  "closeShift": "Close shift",
+  "shiftSummary": "Shift summary",
+  "invoicesCount": "Invoices",
+  "gross": "Gross",
+  "tax": "Tax",
+  "encryptedBackup": "Create encrypted backup",
+  "exportPlaintext": "Export decrypted copy",
+  "rotateKey": "Rotate database key",
+  "loginTitle": "Unlock iPOS",
+  "loginSubtitle": "Select your account and enter your PIN.",
+  "selectUser": "Account",
+  "pin": "PIN",
+  "signIn": "Unlock",
+  "invalidCredentials": "That account and PIN do not match.",
+  "firstRunHint": "First launch: administrator PIN 1234. Change it immediately.",
+  "changePin": "Change PIN",
+  "currentPin": "Current PIN",
+  "newPin": "New PIN",
+  "confirmPin": "Confirm new PIN",
+  "pinMismatch": "The new PINs do not match.",
+  "pinChanged": "PIN updated",
+  "permissionDenied": "You do not have permission for this action.",
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "close": "Close",
+  "confirm": "Confirm",
+  "printReceipt": "Print receipt",
+  "printingUnavailable": "Configure a receipt printer in Settings.",
+  "printFailed": "Receipt could not be printed.",
+  "receiptPrinted": "Receipt sent to printer",
+  "syncNow": "Sync now",
+  "syncComplete": "Sync completed",
+  "syncNotConfigured": "Configure the sync endpoint and token first.",
+  "shiftClosed": "Shift closed",
+  "noSalesInShift": "No sales in this shift.",
+  "databaseMaintenance": "Database maintenance",
+  "integrityCheck": "Run integrity check",
+  "backupCreated": "Encrypted backup created",
+  "plaintextWarning": "The decrypted copy is unprotected. Store it securely and delete it after use.",
+  "keyRotationWarning": "Rotating the key closes the till and requires a restart. A recovery backup is created first.",
+  "keyRotated": "Database key rotated. Restart iPOS.",
+  "restartRequired": "Restart iPOS to open the vault with the new key.",
+  "loading": "Loading…",
+  "errorGeneric": "Something went wrong. Nothing was lost; try again.",
+  "errorDiskFull": "Storage is full. Free space before continuing.",
+  "errorVault": "The encrypted vault is unavailable. Do not clear app data; follow the recovery runbook.",
+  "notifications": "Notifications",
+  "noNotifications": "You're all caught up.",
+  "markAllRead": "Mark all read",
+  "clearRead": "Clear read",
+  "unreadCount": "{count} unread",
+  "@unreadCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pinInvalid": "PIN must be 4 to 8 digits.",
+  "rolePermissions": "Permissions",
+  "noUsers": "No users",
+  "userCreated": "User created",
+  "userUpdated": "User updated",
+  "pinResetDone": "PIN reset. The user must change it at next sign-in.",
+  "lastSignIn": "Last sign-in",
+  "never": "Never",
+  "confirmResetPin": "Reset this user PIN?",
+  "setTemporaryPin": "Temporary PIN",
+  "status": "Status",
+  "permissions": "Permissions",
+  "passwordPolicy": "4 to 8 digits",
+  "deactivate": "Deactivate",
+  "activate": "Activate",
+  "permSell": "Sell",
+  "permRefund": "Refund",
+  "permInventory": "Manage inventory",
+  "permCustomers": "Manage customers",
+  "permSettings": "Manage settings",
+  "permUsers": "Manage users",
+  "permReports": "View reports",
+  "permAudit": "View audit trail",
+  "permBackup": "Manage backups",
+  "permRotate": "Rotate keys",
+  "auditTitle": "Audit trail",
+  "auditSubtitle": "Every recorded action with actor, before, and after values",
+  "verifyChain": "Verify chain",
+  "chainValid": "Audit chain valid ({count} events)",
+  "chainInvalid": "Audit chain broken at {id}",
+  "searchAudit": "Search actor, action, or entity",
+  "noAudit": "No audit events match",
+  "beforeLabel": "Before",
+  "afterLabel": "After",
+  "actorLabel": "Actor",
+  "actionLabel": "Action",
+  "entityLabel": "Entity",
+  "systemActor": "System",
+  "eventsCount": "{count} events",
+  "maintenanceTitle": "Database maintenance",
+  "maintenanceSubtitle": "Backups, integrity, shift close, and plaintext export",
+  "integrityValid": "Integrity check passed",
+  "integrityInvalid": "Integrity check failed. Restore a verified backup.",
+  "vacuumDone": "Storage compacted",
+  "shiftCloseConfirm": "Close the current shift and run post-shift maintenance?",
+  "plaintextExportConfirm": "This writes an unencrypted copy. Continue only if authorized.",
+  "@chainValid": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@chainInvalid": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "@eventsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "refresh": "Refresh",
+  "search": "Search",
+  "productCreated": "Product created",
+  "productUpdated": "Product updated",
+  "stockAdjusted": "Stock adjusted",
+  "confirmDeleteProduct": "Delete this product? Historical invoices remain.",
+  "deleted": "Deleted",
+  "uomSaved": "Selling unit saved",
+  "removeUnit": "Remove unit",
+  "unit": "Unit",
+  "price": "Price",
+  "invalidNumber": "Enter a valid number.",
+  "noStock": "Out of stock",
+  "customerCreated": "Customer created",
+  "customerUpdated": "Customer updated",
+  "confirmDeleteCustomer": "Delete this customer? Historical invoices remain.",
+  "offlineReady": "Offline-ready",
+  "encryptedLocalVault": "Encrypted local vault",
+  "encryptedVaultActive": "Encrypted local vault is active",
+  "scaffoldedPending": "SCAFFOLDED · BACK-OFFICE INTEGRATION PENDING",
+  "frontCounter": "Front Counter",
+  "frontCounterSubtitle": "Offline register · YMM fitment · encrypted local invoices",
+  "cart": "Cart",
+  "viewCart": "View cart",
+  "addedToCart": "{name} · {price} added",
+  "clearSearch": "Clear search",
+  "searchPartsHint": "Scan or type SKU, OEM number, or part name…",
+  "searching": "Searching…",
+  "resultsCount": "{count, plural, =0{No parts} =1{1 part} other{{count} parts}}",
+  "localOnly": "Local",
+  "searchShortcut": "F2 search · Enter adds top match",
+  "catalogUnavailable": "Catalog unavailable",
+  "retry": "Retry",
+  "noMatchingParts": "No matching parts",
+  "noMatchingPartsHint": "Try a shorter SKU/OEM fragment, clear a YMM filter, or confirm the catalog has been ingested for this vehicle.",
+  "resetFilters": "Reset search and YMM filters",
+  "oem": "OEM",
+  "part": "Part",
+  "unitsLines": "{units} units · {lines} lines",
+  "clearCart": "Clear cart",
+  "closeCheckout": "Close checkout",
+  "customerAccount": "Customer account",
+  "removeLine": "Remove line",
+  "decreaseQuantity": "Decrease quantity",
+  "increaseQuantity": "Increase quantity",
+  "sellingUnit": "Selling unit",
+  "coreIncluded": "Includes {amount} refundable core deposit",
+  "payment": "Payment",
+  "saleSaved": "Saved to the encrypted local ledger. Invoice lines and stock movements were committed together.",
+  "@addedToCart": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "@resultsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@unitsLines": {
+    "placeholders": {
+      "units": {
+        "type": "int"
+      },
+      "lines": {
+        "type": "int"
+      }
+    }
+  },
+  "@coreIncluded": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "addToCart": "Add to cart",
+  "searchShortcutKey": "{key} search · Enter adds top match",
+  "@searchShortcutKey": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    }
+  },
+  "printPreview": "Print preview",
+  "paperA4": "A4 invoice",
+  "paper80mm": "80 mm thermal",
+  "paper58mm": "58 mm mini",
+  "printNow": "Print",
+  "printProforma": "Proforma",
+  "proformaPrinted": "Proforma sent to printer",
+  "proformaPrintFailed": "Proforma could not be printed.",
+  "receiptPaper": "Receipt paper",
+  "draftRestored": "Draft restored. Continue where you left off.",
+  "emailInvoice": "Email invoice",
+  "emailProforma": "Email proforma",
+  "emailRecipient": "Recipient email",
+  "emailDelivery": "Delivery",
+  "emailPdfAttachment": "PDF attachment",
+  "emailPlainText": "Text only",
+  "sendEmail": "Send email",
+  "emailSent": "Invoice sent",
+  "emailSentProforma": "Proforma sent",
+  "emailFailed": "Email could not be sent.",
+  "emailNotConfigured": "Configure email in Settings first.",
+  "emailInvalid": "Enter a valid email address.",
+  "emailSettings": "Email",
+  "emailSubtitle": "SMTP relay for invoices and proformas",
+  "emailHost": "SMTP host",
+  "emailPort": "SMTP port",
+  "emailUsername": "SMTP username",
+  "emailPassword": "SMTP password",
+  "emailFromAddress": "From address",
+  "emailFromName": "From name",
+  "emailUseSsl": "Use implicit SSL (usually port 465)",
+  "emailConfigNote": "Credentials are stored in the encrypted local database."
+}

@@ -56,10 +56,10 @@ or CI-only work).
 - [x] Add foreign keys, cascade rules, and idempotent performance indexes.
 - [x] Add `AppDatabaseFactory` applying a raw 256-bit SQLCipher key before migrations.
 - [x] Set WAL, `foreign_keys`, `synchronous=NORMAL`, in-memory temp store, and SQLCipher 4 compatibility.
-- [ ] Add Drift schema export + migration tests for version 1 to N.
-- [ ] Add a background checkpointer and corruption recovery/export-to-plaintext (admin) path.
-- [ ] Add an implicit `UomConversion` lookup matrix to support structural split-pack deductions (e.g., selling single parts out of wholesale boxes).
-- [ ] Add a background cron/routine executing a `PRAGMA vacuum;` sequence upon a successful shift-close to optimize local disk utilization.
+- [x] Add Drift schema export + migration tests for version 1 to N (`drift_schema_v3.json`, v1→3 and v2→3).
+- [x] Add a background checkpointer and corruption recovery/export-to-plaintext (admin) path.
+- [x] Add an implicit `UomConversion` lookup matrix to support structural split-pack deductions (e.g., selling single parts out of wholesale boxes).
+- [x] Add a post-shift `PRAGMA wal_checkpoint` + `PRAGMA vacuum` routine triggered by shift close.
 
 ## 4. Repositories & Transactional Lookup
 
@@ -74,9 +74,10 @@ or CI-only work).
 - [x] Add in-memory Drift integration tests for YMM filtering, soft deletes, exact lookup,
       transaction rollback, invoice sequencing, line snapshots, and stock movements.
 - [ ] Add repository tests against a keyed in-memory SQLCipher database.
-- [ ] Add sync outbox drain, conflict policy, and back-office reconciliation adapters.
+- [x] Add sync outbox drain with retry backoff, server-conflict overwrite, cursor persistence, and failure notifications.
+- [ ] Add back-office reconciliation adapters for serving push/pull and resolving conflicts.
 
-- [ ] Implement Core Fee Flag handling on invoice items to separate core deposits from base product retail totals.
+- [x] Implement Core Fee Flag handling on invoice items to separate core deposits from base product retail totals.
 - [ ] Design a catalog sync ingestion adapter that processes compressed database files rather than heavy JSON text payloads.
 
 
@@ -95,7 +96,7 @@ or CI-only work).
 - [x] Add empty/loading/error states and dense row interaction for touch and mouse.
 - [x] Add short-window handling: scrollable checkout below 620 px and a horizontally
       scrollable YMM strip on narrow phones, preventing RenderFlex overflow.
-- [ ] Replace scaffolded Inventory Registry / Customers / Settings modules with full screens.
+- [x] Replace scaffolded Inventory Registry / Customers / Settings modules with full screens.
 - [ ] Add barcode scanner wedge tuning, hotkey customization, and cash-drawer/receipt printing.
 - [x] Add responsive widget smoke tests for phone portrait/landscape, tablet, 1024, 1280,
       and 1920 px layouts, including the checkout end drawer.
@@ -113,8 +114,31 @@ or CI-only work).
 
 - [x] Add corporate file-header signature blocks to all authored Dart modules and pubspec.
 - [x] Add this tracker and keep checklist flags current.
-- [x] Run `flutter analyze` and `flutter test` clean.
+- [x] Run `flutter analyze` and `flutter test` clean (schema, vault, ledger, audit, auth, notifications, responsive/locale smoke).
 - [ ] Run Android, iOS, Windows, macOS, and Linux smoke builds on their native runners.
 - [ ] Add crash reporting with secret redaction and structured checkout audit logs.
 - [ ] Add rate/disk-full handling, database key loss UX, and disaster-recovery runbook.
 - [ ] Add accessibility pass (contrast audit, large text, screen reader labels).
+
+## 8. Identity, Localization, Notifications & Audit
+
+- [x] Add offline sign-in with PBKDF2-HMAC-SHA256 PIN hashing, forced first-run PIN rotation, and session actor resolution.
+- [x] Add role-based access control (admin, manager, cashier) with permission-gated modules and settings tabs.
+- [x] Seed three system roles and the first administrator idempotently; protect the last administrator from deactivation.
+- [x] Add user administration: create, edit, deactivate/activate, reset PIN, audit every change with actor and before/after.
+- [x] Add English, French, and Kinyarwanda localization for register, checkout, inventory, customers, settings, auth, audit, users, and notifications.
+- [x] Add Kinyarwanda framework-localization fallbacks so Material/Widgets/Cupertino controls build without a native `rw` bundle.
+- [x] Persist language and theme and apply them live without restart.
+- [x] Add hash-chained audit events with actor, action, entity, timestamp, and before/after JSON; add chain verification UI.
+- [x] Add notification inbox with unread dedupe, severity, mark-read, clear-read, and a reactive shell badge.
+- [x] Emit notifications for low stock, shift close, integrity failure, encrypted backup, and plaintext export.
+- [x] Emit sync/offline-queue notifications when the outbox drain is implemented.
+- [x] Add cash-drawer kick and ESC/POS receipt printing wired to the configured network printer transport.
+- [x] Add print preview and paper selection for A4 PDF, 80 mm thermal, and 58 mm mini/mobile printers.
+- [x] Add proforma invoice printing from the live cart without deducting stock or writing an invoice.
+- [x] Add SMTP email configuration under Settings and send invoices/proformas as a PDF attachment or plain text.
+- [ ] Persist and restore in-progress cart drafts across sign-out, shutdown, or accidental exit.
+- [x] Add runtime hotkey binding from persisted settings for search and checkout.
+- [ ] Add configurable scanner wedge timing (minimum scan length is enforced; timeout still needs a dedicated wedge detector).
+- [ ] Wire the explicit admin key-rotation ceremony to the maintenance UI with restart guidance.
+- [ ] Add golden snapshots and cart-mutation/receipt interaction tests.

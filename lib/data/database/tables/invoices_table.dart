@@ -42,7 +42,11 @@ class Invoices extends Table {
   /// Header-level discount in minor units; zero for the initial register.
   IntColumn get discountCents => integer().withDefault(const Constant(0))();
 
-  /// Final amount due: subtotal - discount + tax.
+  /// Refundable core/deposit total in minor units. This is collected with the
+  /// sale but excluded from merchandise revenue and VAT.
+  IntColumn get coreFeeTotalCents => integer().withDefault(const Constant(0))();
+
+  /// Final amount due: subtotal - discount + tax + core fees.
   IntColumn get totalCents => integer()();
 
   /// VAT rate snapshot in basis points (1800 == 18.00%).

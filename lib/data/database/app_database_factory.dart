@@ -36,16 +36,7 @@ abstract final class AppDatabaseFactory {
   static Future<AppDatabase> open({SecureKeyManager? keyManager}) async {
     final keyHex = await (keyManager ?? SecureKeyManager.instance)
         .databaseKeyHex();
-
-    final supportDirectory = await getApplicationSupportDirectory();
-    final databaseDirectory = Directory(
-      p.join(supportDirectory.path, _directoryName),
-    );
-    await databaseDirectory.create(recursive: true);
-
-    final databaseFile = File(
-      p.join(databaseDirectory.path, _databaseFileName),
-    );
+    final databaseFile = await resolveDatabaseFile();
 
     final executor = NativeDatabase.createInBackground(
       databaseFile,
@@ -101,5 +92,16 @@ abstract final class AppDatabaseFactory {
       }
       rethrow;
     }
+  }
+
+  /// Resolves the app-private encrypted database file used by maintenance
+  /// operations such as backup, integrity checks, and key rotation.
+  static Future<File> resolveDatabaseFile() async {
+    final supportDirectory = await getApplicationSupportDirectory();
+    final databaseDirectory = Directory(
+      p.join(supportDirectory.path, _directoryName),
+    );
+    await databaseDirectory.create(recursive: true);
+    return File(p.join(databaseDirectory.path, _databaseFileName));
   }
 }

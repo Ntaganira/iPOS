@@ -44,6 +44,13 @@ dependencies:
 
   # Currency and invoice-number formatting; no network dependency.
   intl: ^0.20.3
+  crypto: ^3.0.7
+  http: ^1.6.0
+  flutter_localizations:
+    sdk: flutter
+  pdf: ^3.13.1
+  printing: ^5.15.1
+  mailer: ^7.2.0
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +63,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
 
 # Select the SQLCipher community build of SQLite. package:sqlite3 downloads and
 # verifies the matching native artifact for Android, iOS, macOS, Windows, and

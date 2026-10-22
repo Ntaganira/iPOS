@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_layout.dart';
 import '../../../core/utils/money.dart';
 import '../../../data/models/catalog_part.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 /// Virtualized catalog list with an aligned sticky header.
 class CatalogTable extends StatefulWidget {
@@ -75,6 +76,7 @@ class _CatalogTableState extends State<CatalogTable> {
     required bool showSku,
     required bool showOem,
   }) {
+    final l10n = AppLocalizations.of(context);
     if (widget.loading && widget.results.isEmpty) {
       return const Center(
         child: SizedBox(
@@ -88,21 +90,19 @@ class _CatalogTableState extends State<CatalogTable> {
     if (widget.error != null && widget.results.isEmpty) {
       return _CatalogMessage(
         icon: Icons.storage_rounded,
-        title: 'Catalog unavailable',
+        title: l10n.catalogUnavailable,
         message: widget.error!,
-        actionLabel: 'Retry',
+        actionLabel: l10n.retry,
         onAction: widget.onRetry,
         isError: true,
       );
     }
 
     if (widget.results.isEmpty) {
-      return const _CatalogMessage(
+      return _CatalogMessage(
         icon: Icons.search_off_rounded,
-        title: 'No matching parts',
-        message:
-            'Try a shorter SKU/OEM fragment, clear a YMM filter, or confirm '
-            'the catalog has been ingested for this vehicle.',
+        title: l10n.noMatchingParts,
+        message: l10n.noMatchingPartsHint,
       );
     }
 
@@ -140,6 +140,7 @@ class _CatalogHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
     final style = theme.textTheme.labelSmall?.copyWith(
       color: scheme.onSurfaceVariant,
       letterSpacing: 0.8,
@@ -151,31 +152,25 @@ class _CatalogHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
-        border: Border(
-          bottom: BorderSide(color: scheme.outlineVariant),
-        ),
+        border: Border(bottom: BorderSide(color: scheme.outlineVariant)),
       ),
       child: Row(
         children: [
-          if (showSku)
-            Expanded(
-              flex: 2,
-              child: Text('SKU', style: style),
-            ),
+          if (showSku) Expanded(flex: 2, child: Text('SKU', style: style)),
           if (showOem)
             Expanded(
               flex: 2,
-              child: Text('OEM', style: style),
+              child: Text(l10n.oem.toUpperCase(), style: style),
             ),
           Expanded(
             flex: partFlex,
-            child: Text('PART', style: style),
+            child: Text(l10n.part.toUpperCase(), style: style),
           ),
           Expanded(
             flex: 2,
             child: Align(
               alignment: Alignment.centerRight,
-              child: Text('PRICE', style: style),
+              child: Text(l10n.price.toUpperCase(), style: style),
             ),
           ),
           const SizedBox(width: 40),
@@ -299,7 +294,7 @@ class _CatalogRow extends StatelessWidget {
               SizedBox(
                 width: 40,
                 child: IconButton(
-                  tooltip: 'Add ${part.partName} to cart',
+                  tooltip: AppLocalizations.of(context).addToCart,
                   onPressed: onAdd,
                   icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
                   style: IconButton.styleFrom(

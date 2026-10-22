@@ -40,6 +40,14 @@ class Products extends Table {
   /// Optional trade/account price in integer minor units (cents).
   IntColumn get tradePrice => integer().nullable()();
 
+  /// Refundable core/deposit amount per selling unit, in minor units. Kept
+  /// separate from the merchandise price so reports can distinguish deposits
+  /// from revenue.
+  IntColumn get coreFeeCents => integer().withDefault(const Constant(0))();
+
+  /// Stock-keeping unit of measure (`EA`, `BOX`, `SET`, ...).
+  TextColumn get baseUnit => text().withDefault(const Constant('EA'))();
+
   /// Last local mutation in UTC, in Drift's default epoch-seconds encoding.
   DateTimeColumn get updatedAt => dateTime()();
 

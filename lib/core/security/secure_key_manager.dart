@@ -135,6 +135,33 @@ class SecureKeyManager {
     return generated;
   }
 
+  /// Creates a new candidate key for an explicit administrator rotation. This
+  /// does not write it to the secure store; call [replaceDatabaseKey] only
+  /// after SQLCipher has successfully rekeyed the file.
+  String generateCandidateKey() => _generateHexKey();
+
+  /// Atomically replaces the persisted key after a successful PRAGMA rekey.
+  ///
+  /// Read-back verification catches Keychain/Keystore write failures. The
+  /// previous key is no longer valid for the database at this point, so a
+  /// failure here must be recovered from the pre-rotation encrypted backup.
+  Future<void> replaceDatabaseKey(String newKeyHex) async {
+    final normalized = newKeyHex.trim().toLowerCase();
+    if (!_keyPattern.hasMatch(normalized)) {
+      throw ArgumentError('The new database key must be 64 hex characters.');
+    }
+
+    await _storage.write(key: _databaseKeyAlias, value: normalized);
+    final persisted = await _storage.read(key: _databaseKeyAlias);
+    if (persisted != normalized) {
+      throw StateError(
+        'The rotated database key could not be persisted. Restore the '
+        'pre-rotation backup and follow the recovery runbook.',
+      );
+    }
+    _cachedKeyHex = normalized;
+  }
+
   /// Generates 32 bytes from the platform CSPRNG and encodes them as lowercase
   /// hexadecimal. Hex is used because SQLCipher's raw-key syntax accepts it
   /// directly, avoiding a second encoder and any ambiguity in string handling.

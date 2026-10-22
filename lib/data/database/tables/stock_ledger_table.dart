@@ -23,18 +23,23 @@ import 'products_table.dart';
 class StockLedger extends Table {
   TextColumn get id => text()();
 
-  TextColumn get productId => text().references(
-    Products,
-    #id,
-    onDelete: KeyAction.restrict,
-  )();
+  TextColumn get productId =>
+      text().references(Products, #id, onDelete: KeyAction.restrict)();
 
   /// Physical bin/shelf. Counter sales use `FRONT`; stock receipts carry
   /// their actual bin assignment.
   TextColumn get binLocation => text().withLength(min: 1, max: 64)();
 
-  /// Signed movement: positive for receipts/returns, negative for sales.
+  /// Signed movement in product base units: positive for receipts/returns,
+  /// negative for sales.
   IntColumn get qtyDelta => integer()();
+
+  /// Business document that caused this movement (`sale`, `receipt`,
+  /// `adjustment`, `import`).
+  TextColumn get referenceType => text().withDefault(const Constant('sale'))();
+
+  /// Invoice, receipt, count, or import id, when one exists.
+  TextColumn get referenceId => text().nullable()();
 
   /// UTC mutation time for delta-based synchronization.
   DateTimeColumn get updatedAt => dateTime()();

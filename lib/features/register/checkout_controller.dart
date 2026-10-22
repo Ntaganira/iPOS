@@ -38,11 +38,14 @@ enum PaymentMethod {
 
 /// Owns the active cart and the local checkout lifecycle.
 class CheckoutController extends ChangeNotifier {
-  CheckoutController({required CheckoutRepository repository})
-    : _repository = repository;
+  CheckoutController({
+    required CheckoutRepository repository,
+    int taxRateBps = defaultTaxRateBps,
+  }) : _repository = repository,
+       _taxRateBps = taxRateBps;
 
   /// Rwanda VAT for the initial deployment. Persisted per invoice and per line.
-  static const int taxRateBps = 1800;
+  static const int defaultTaxRateBps = 1800;
 
   final CheckoutRepository _repository;
 
@@ -55,6 +58,20 @@ class CheckoutController extends ChangeNotifier {
   bool _submitting = false;
   String? _error;
   bool _disposed = false;
+  int _taxRateBps;
+
+  int get taxRateBps => _taxRateBps;
+
+  /// Applies a new VAT rate to the current cart. Existing invoices keep their
+  /// snapshot and are never repriced.
+  void setTaxRateBps(int value) {
+    final normalized = value.clamp(0, 10000).toInt();
+    if (_taxRateBps == normalized) {
+      return;
+    }
+    _taxRateBps = normalized;
+    _safeNotify();
+  }
 
   List<CartLine> get lines => List<CartLine>.unmodifiable(_lines);
   List<CustomerOption> get customers =>
@@ -65,16 +82,19 @@ class CheckoutController extends ChangeNotifier {
   bool get submitting => _submitting;
   String? get error => _error;
 
-  int get itemCount =>
-      _lines.fold<int>(0, (sum, line) => sum + line.quantity);
+  int get itemCount => _lines.fold<int>(0, (sum, line) => sum + line.quantity);
 
   int get subtotalCents =>
       _lines.fold<int>(0, (sum, line) => sum + line.lineSubtotalCents);
 
   int get taxCents =>
-      Money.taxCents(subtotalCents: subtotalCents, rateBps: taxRateBps);
+      Money.taxCents(subtotalCents: subtotalCents, rateBps: _taxRateBps);
 
-  int get totalCents => subtotalCents + taxCents;
+  /// Refundable core/deposit amounts collected with this sale.
+  int get coreFeeCents =>
+      _lines.fold<int>(0, (sum, line) => sum + line.coreFeeCents);
+
+  int get totalCents => subtotalCents + taxCents + coreFeeCents;
 
   bool get canCheckout => _lines.isNotEmpty && !_submitting;
 
@@ -110,19 +130,36 @@ class CheckoutController extends ChangeNotifier {
   /// Adds a catalog part or increments its existing line. Mutations are frozen
   /// while a commit is in flight so a late add cannot be silently cleared when
   /// the successfully charged cart resets.
-  void addPart(CatalogPart part) {
+  void addPart(CatalogPart part, {UomOption? uom}) {
     if (_submitting) {
       return;
     }
     final index = _lines.indexWhere((line) => line.part.id == part.id);
     if (index == -1) {
-      _lines.add(CartLine(part: part, quantity: 1));
+      _lines.add(
+        CartLine(part: part, quantity: 1, uom: uom ?? part.defaultSellingUnit),
+      );
     } else {
       _lines[index] = _lines[index].copyWith(
         quantity: _lines[index].quantity + 1,
+        uom: uom ?? _lines[index].uom,
       );
     }
     _error = null;
+    _safeNotify();
+  }
+
+  /// Changes the selling unit for one cart line. Prices are quoted per selling
+  /// unit, while stock deductions use the selected conversion factor.
+  void setLineUom(String productId, UomOption uom) {
+    if (_submitting || uom.factor < 1) {
+      return;
+    }
+    final index = _lines.indexWhere((line) => line.part.id == productId);
+    if (index == -1) {
+      return;
+    }
+    _lines[index] = _lines[index].copyWith(uom: uom);
     _safeNotify();
   }
 

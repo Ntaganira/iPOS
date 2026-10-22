@@ -24,17 +24,11 @@ import 'vehicles_table.dart';
 class ProductCompatibility extends Table {
   TextColumn get id => text()();
 
-  TextColumn get productId => text().references(
-    Products,
-    #id,
-    onDelete: KeyAction.cascade,
-  )();
+  TextColumn get productId =>
+      text().references(Products, #id, onDelete: KeyAction.cascade)();
 
-  TextColumn get vehicleId => text().references(
-    Vehicles,
-    #id,
-    onDelete: KeyAction.cascade,
-  )();
+  TextColumn get vehicleId =>
+      text().references(Vehicles, #id, onDelete: KeyAction.cascade)();
 
   /// UTC mutation time used by the sync reconciler.
   DateTimeColumn get updatedAt => dateTime()();

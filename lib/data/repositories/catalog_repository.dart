@@ -35,23 +35,21 @@ class CatalogRepository {
     p.brand AS brand,
     p.retail_price AS retail_price,
     p.trade_price AS trade_price,
+    p.core_fee_cents AS core_fee_cents,
+    p.base_unit AS base_unit,
     p.updated_at AS updated_at
   ''';
 
   /// Distinct makes for the first YMM dropdown.
   Future<List<String>> listMakes() async {
-    final rows = await _database
-        .customSelect('''
+    final rows = await _database.customSelect('''
           SELECT DISTINCT make
           FROM vehicles
           WHERE is_deleted = 0 AND make <> ''
           ORDER BY make COLLATE NOCASE
-        ''')
-        .get();
+        ''').get();
 
-    return rows
-        .map((row) => row.read<String>('make'))
-        .toList(growable: false);
+    return rows.map((row) => row.read<String>('make')).toList(growable: false);
   }
 
   /// Models available for a make. Returns an empty list for a null/blank make
@@ -61,8 +59,9 @@ class CatalogRepository {
       return const <String>[];
     }
 
-    final rows = await _database.customSelect(
-      '''
+    final rows = await _database
+        .customSelect(
+          '''
         SELECT DISTINCT model
         FROM vehicles
         WHERE is_deleted = 0
@@ -70,12 +69,11 @@ class CatalogRepository {
           AND model <> ''
         ORDER BY model COLLATE NOCASE
       ''',
-      variables: [Variable.withString(make)],
-    ).get();
+          variables: [Variable.withString(make)],
+        )
+        .get();
 
-    return rows
-        .map((row) => row.read<String>('model'))
-        .toList(growable: false);
+    return rows.map((row) => row.read<String>('model')).toList(growable: false);
   }
 
   /// Model years available for a make/model pair, newest first.
@@ -87,8 +85,9 @@ class CatalogRepository {
       return const <int>[];
     }
 
-    final rows = await _database.customSelect(
-      '''
+    final rows = await _database
+        .customSelect(
+          '''
         SELECT DISTINCT year
         FROM vehicles
         WHERE is_deleted = 0
@@ -96,8 +95,9 @@ class CatalogRepository {
           AND model = ?
         ORDER BY year DESC
       ''',
-      variables: [Variable.withString(make), Variable.withString(model)],
-    ).get();
+          variables: [Variable.withString(make), Variable.withString(model)],
+        )
+        .get();
 
     return rows.map((row) => row.read<int>('year')).toList(growable: false);
   }
@@ -177,8 +177,7 @@ class CatalogRepository {
     var orderBy = 'p.part_name COLLATE NOCASE ASC';
     if (normalizedTerm.isNotEmpty) {
       // Rank exact scanner/operator matches ahead of partial description hits.
-      orderBy =
-          '''
+      orderBy = '''
           CASE
             WHEN p.sku = ? COLLATE NOCASE
               OR p.oem_number = ? COLLATE NOCASE
@@ -192,7 +191,8 @@ class CatalogRepository {
     }
 
     final safeLimit = limit.clamp(1, 500).toInt();
-    final sql = '''
+    final sql =
+        '''
       SELECT $_productColumns
       FROM products p
       WHERE ${conditions.join(' AND ')}
@@ -211,7 +211,37 @@ class CatalogRepository {
         )
         .get();
 
-    return rows.map(_mapPart).toList(growable: false);
+    return _withUomOptions(rows.map(_mapPart).toList(growable: false));
+  }
+
+  /// Exact SKU/OEM scanner lookup without a fitment filter.
+  Future<List<CatalogPart>> findByNumber({required String partNumber}) async {
+    final normalized = partNumber.trim();
+    if (normalized.isEmpty) {
+      return const <CatalogPart>[];
+    }
+
+    final rows = await _database
+        .customSelect(
+          '''
+            SELECT $_productColumns
+            FROM products p
+            WHERE p.is_deleted = 0
+              AND (
+                p.sku = ? COLLATE NOCASE
+                OR p.oem_number = ? COLLATE NOCASE
+              )
+            ORDER BY p.part_name COLLATE NOCASE
+            LIMIT 50
+          ''',
+          variables: [
+            Variable.withString(normalized),
+            Variable.withString(normalized),
+          ],
+        )
+        .get();
+
+    return _withUomOptions(rows.map(_mapPart).toList(growable: false));
   }
 
   /// Exact aftermarket SKU or OEM cross-reference lookup for a single vehicle.
@@ -279,8 +309,49 @@ class CatalogRepository {
           )
           .get();
 
-      return rows.map(_mapPart).toList(growable: false);
+      return _withUomOptions(rows.map(_mapPart).toList(growable: false));
     });
+  }
+
+  /// Loads conversion edges in one query for the current result page.
+  Future<List<CatalogPart>> _withUomOptions(List<CatalogPart> parts) async {
+    if (parts.isEmpty) {
+      return parts;
+    }
+
+    final placeholders = List<String>.filled(parts.length, '?').join(', ');
+    final rows = await _database.customSelect(
+      '''
+        SELECT product_id, from_unit, factor
+        FROM uom_conversions
+        WHERE is_deleted = 0
+          AND product_id IN ($placeholders)
+        ORDER BY factor ASC
+      ''',
+      variables: parts
+          .map((part) => Variable.withString(part.id))
+          .toList(growable: false),
+    ).get();
+
+    final optionsByProduct = <String, List<UomOption>>{};
+    for (final row in rows) {
+      optionsByProduct
+          .putIfAbsent(row.read<String>('product_id'), () => <UomOption>[])
+          .add(
+            UomOption(
+              label: row.read<String>('from_unit'),
+              factor: row.read<int>('factor'),
+            ),
+          );
+    }
+
+    return parts
+        .map(
+          (part) => part.copyWith(
+            uomOptions: optionsByProduct[part.id] ?? const <UomOption>[],
+          ),
+        )
+        .toList(growable: false);
   }
 
   /// Escapes SQLite LIKE metacharacters. The repository always supplies an
@@ -301,6 +372,8 @@ class CatalogRepository {
       brand: row.readNullable<String>('brand'),
       retailPriceCents: row.read<int>('retail_price'),
       tradePriceCents: row.readNullable<int>('trade_price'),
+      coreFeeCents: row.read<int>('core_fee_cents'),
+      baseUnit: row.read<String>('base_unit'),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(
         updatedAtSeconds * 1000,
         isUtc: true,

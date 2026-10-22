@@ -17,12 +17,20 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../core/email/invoice_email_service.dart';
+import '../../../core/printing/esc_pos_printer.dart';
+import '../../../core/printing/receipt_factory.dart';
+import '../../../core/printing/receipt_paper.dart';
 import '../../../core/theme/app_layout.dart';
 import '../../../core/utils/money.dart';
 import '../../../data/models/cart_line.dart';
+import '../../../data/models/catalog_part.dart';
 import '../../../data/models/customer_option.dart';
 import '../../../data/repositories/checkout_repository.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../checkout_controller.dart';
+import 'email_invoice_dialog.dart';
+import 'receipt_print_dialog.dart';
 
 /// Persistent/drawer checkout surface.
 class CheckoutPanel extends StatefulWidget {
@@ -30,10 +38,30 @@ class CheckoutPanel extends StatefulWidget {
     super.key,
     required this.controller,
     this.onClose,
+    this.onPrint,
+    this.onEmail,
+    this.storeName = 'iPOS Parts Counter',
+    this.defaultPaper = ReceiptPaperSize.mm80,
   });
 
   final CheckoutController controller;
   final VoidCallback? onClose;
+
+  /// Optional printer transport. Receives a previewed document and the chosen
+  /// paper format; printing only happens after the local commit succeeded.
+  final Future<void> Function(ReceiptDocument document, ReceiptPaperSize paper)?
+  onPrint;
+
+  /// Optional SMTP delivery. Receives the previewed document and the operator's
+  /// recipient/format choice.
+  final Future<void> Function(ReceiptDocument document, EmailRequest request)?
+  onEmail;
+
+  /// Printed store identity, also used for proforma output.
+  final String storeName;
+
+  /// Last paper choice from terminal settings.
+  final ReceiptPaperSize defaultPaper;
 
   @override
   State<CheckoutPanel> createState() => _CheckoutPanelState();
@@ -45,7 +73,148 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     if (!mounted || result == null) {
       return;
     }
-    await _showReceipt(result);
+    final action = await _showReceipt(result);
+    if (!mounted || action == null || action == _ReceiptAction.close) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final document = ReceiptDocument.fromCheckout(
+      storeName: widget.storeName,
+      result: result,
+    );
+    if (action == _ReceiptAction.print) {
+      await _previewAndPrint(
+        document,
+        successMessage: l10n.receiptPrinted,
+        failureMessage: l10n.printFailed,
+      );
+    } else {
+      await _emailDocument(
+        document,
+        successMessage: l10n.emailSent,
+        failureMessage: l10n.emailFailed,
+      );
+    }
+  }
+
+  Future<void> _emailProforma() async {
+    if (widget.onEmail == null || widget.controller.lines.isEmpty) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final document = buildProformaDocument(
+      storeName: widget.storeName,
+      lines: widget.controller.lines,
+      taxRateBps: widget.controller.taxRateBps,
+      customer: widget.controller.selectedCustomer,
+    );
+    await _emailDocument(
+      document,
+      successMessage: l10n.emailSentProforma,
+      failureMessage: l10n.emailFailed,
+    );
+  }
+
+  Future<void> _printProforma() async {
+    if (widget.onPrint == null || widget.controller.lines.isEmpty) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final document = buildProformaDocument(
+      storeName: widget.storeName,
+      lines: widget.controller.lines,
+      taxRateBps: widget.controller.taxRateBps,
+      customer: widget.controller.selectedCustomer,
+    );
+    await _previewAndPrint(
+      document,
+      successMessage: l10n.proformaPrinted,
+      failureMessage: l10n.proformaPrintFailed,
+    );
+  }
+
+  Future<void> _emailDocument(
+    ReceiptDocument document, {
+    required String successMessage,
+    required String failureMessage,
+  }) async {
+    final deliver = widget.onEmail;
+    if (deliver == null) {
+      return;
+    }
+    final request = await showDialog<EmailRequest>(
+      context: context,
+      builder: (dialogContext) => EmailInvoiceDialog(
+        documentTitle: document.documentTitle,
+        reference: document.invoiceNumber,
+      ),
+    );
+    if (!mounted || request == null) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    try {
+      await deliver(document, request);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(successMessage)));
+      }
+    } on EmailConfigurationException {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.emailNotConfigured)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failureMessage)));
+      }
+    }
+  }
+
+  Future<void> _previewAndPrint(
+    ReceiptDocument document, {
+    required String successMessage,
+    required String failureMessage,
+  }) async {
+    final print = widget.onPrint;
+    if (print == null) {
+      return;
+    }
+    final paper = await showDialog<ReceiptPaperSize>(
+      context: context,
+      builder: (dialogContext) => ReceiptPrintDialog(
+        document: document,
+        initialPaper: widget.defaultPaper,
+      ),
+    );
+    if (!mounted || paper == null) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    try {
+      await print(document, paper);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(successMessage)));
+      }
+    } on StateError {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.printingUnavailable)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failureMessage)));
+      }
+    }
   }
 
   /// Cart lines are the only flexible region. In the pinned layout they fill
@@ -83,24 +252,22 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           onIncrement: () => controller.incrementLine(line.part.id),
           onDecrement: () => controller.decrementLine(line.part.id),
           onRemove: () => controller.removeLine(line.part.id),
+          onUomChanged: (uom) => controller.setLineUom(line.part.id, uom),
         );
       },
     );
   }
 
-  Future<void> _showReceipt(CheckoutResult result) async {
+  Future<_ReceiptAction?> _showReceipt(CheckoutResult result) async {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
-    await showDialog<void>(
+    return showDialog<_ReceiptAction>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        icon: Icon(
-          Icons.check_circle_rounded,
-          color: scheme.primary,
-          size: 36,
-        ),
-        title: const Text('Sale completed'),
+        icon: Icon(Icons.check_circle_rounded, color: scheme.primary, size: 36),
+        title: Text(l10n.saleCompleted),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -119,8 +286,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Saved to the encrypted local ledger. Invoice lines and stock '
-              'movements were committed together.',
+              l10n.saleSaved,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
@@ -129,9 +295,24 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           ],
         ),
         actions: [
+          if (widget.onEmail != null)
+            OutlinedButton.icon(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(_ReceiptAction.email),
+              icon: const Icon(Icons.outgoing_mail, size: 18),
+              label: Text(l10n.emailInvoice),
+            ),
+          if (widget.onPrint != null)
+            OutlinedButton.icon(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(_ReceiptAction.print),
+              icon: const Icon(Icons.print_outlined, size: 18),
+              label: Text(l10n.printReceipt),
+            ),
           FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('New sale'),
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(_ReceiptAction.close),
+            child: Text(l10n.newSale),
           ),
         ],
       ),
@@ -158,6 +339,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
         final footer = _CheckoutFooter(
           controller: controller,
           onCharge: _charge,
+          onProforma: widget.onPrint == null ? null : _printProforma,
+          onEmailProforma: widget.onEmail == null ? null : _emailProforma,
         );
 
         return Container(
@@ -229,6 +412,7 @@ class _CheckoutHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
@@ -252,10 +436,9 @@ class _CheckoutHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Checkout', style: theme.textTheme.titleMedium),
+                Text(l10n.checkoutTitle, style: theme.textTheme.titleMedium),
                 Text(
-                  '$itemCount unit${itemCount == 1 ? '' : 's'} · '
-                  '$lineCount line${lineCount == 1 ? '' : 's'}',
+                  l10n.unitsLines(itemCount, lineCount),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -266,7 +449,7 @@ class _CheckoutHeader extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Clear cart',
+            tooltip: l10n.clearCart,
             onPressed: canClear ? onClear : null,
             icon: const Icon(Icons.delete_sweep_outlined, size: 19),
             style: IconButton.styleFrom(
@@ -277,7 +460,7 @@ class _CheckoutHeader extends StatelessWidget {
           ),
           if (onClose != null)
             IconButton(
-              tooltip: 'Close checkout',
+              tooltip: l10n.closeCheckout,
               onPressed: onClose,
               icon: const Icon(Icons.close_rounded, size: 19),
               style: IconButton.styleFrom(
@@ -302,6 +485,7 @@ class _CustomerSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -309,7 +493,7 @@ class _CustomerSelector extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'CUSTOMER ACCOUNT',
+            l10n.customerAccount.toUpperCase(),
             style: theme.textTheme.labelSmall?.copyWith(
               color: scheme.onSurfaceVariant,
               letterSpacing: 0.8,
@@ -343,9 +527,9 @@ class _CustomerSelector extends StatelessWidget {
                     ? null
                     : controller.selectCustomer,
                 items: [
-                  const DropdownMenuItem<CustomerOption?>(
+                  DropdownMenuItem<CustomerOption?>(
                     value: null,
-                    child: Text('Walk-in customer'),
+                    child: Text(l10n.walkInCustomer),
                   ),
                   for (final customer in controller.customers)
                     DropdownMenuItem<CustomerOption?>(
@@ -377,6 +561,7 @@ class _EmptyCart extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Center(
       child: Padding(
@@ -391,15 +576,14 @@ class _EmptyCart extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Cart is empty',
+              l10n.cartEmpty,
               style: theme.textTheme.titleSmall?.copyWith(
                 color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Scan a part, press Enter for an unambiguous match, or tap a '
-              'catalog row to begin.',
+              l10n.cartHint,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
@@ -418,17 +602,20 @@ class _CartLineTile extends StatelessWidget {
     required this.onIncrement,
     required this.onDecrement,
     required this.onRemove,
+    required this.onUomChanged,
   });
 
   final CartLine line;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
   final VoidCallback onRemove;
+  final ValueChanged<UomOption> onUomChanged;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -450,7 +637,7 @@ class _CartLineTile extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Remove line',
+                tooltip: l10n.removeLine,
                 onPressed: onRemove,
                 icon: const Icon(Icons.close_rounded, size: 16),
                 style: IconButton.styleFrom(
@@ -476,14 +663,30 @@ class _CartLineTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                '${Money.formatCents(line.part.retailPriceCents)} each',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
+              Flexible(
+                child: Text(
+                  '${Money.formatCents(line.part.retailPriceCents)} / '
+                  '${line.uom.label}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
           ),
+          if (line.coreFeeCents > 0) ...[
+            const SizedBox(height: 2),
+            Text(
+              l10n.coreIncluded(Money.formatCents(line.coreFeeCents)),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.tertiary,
+                fontSize: 10.5,
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
           Row(
             children: [
@@ -492,6 +695,8 @@ class _CartLineTile extends StatelessWidget {
                 onIncrement: onIncrement,
                 onDecrement: onDecrement,
               ),
+              const SizedBox(width: 6),
+              _UomSelector(line: line, onChanged: onUomChanged),
               const SizedBox(width: 8),
               Expanded(
                 child: Align(
@@ -517,6 +722,66 @@ class _CartLineTile extends StatelessWidget {
   }
 }
 
+class _UomSelector extends StatelessWidget {
+  const _UomSelector({required this.line, required this.onChanged});
+
+  final CartLine line;
+  final ValueChanged<UomOption> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = line.part.sellingUnits;
+    final label = line.uom.label;
+
+    if (options.length < 2) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(label, style: Theme.of(context).textTheme.labelSmall),
+      );
+    }
+
+    return PopupMenuButton<UomOption>(
+      tooltip: AppLocalizations.of(context).sellingUnit,
+      initialValue: line.uom,
+      onSelected: onChanged,
+      itemBuilder: (context) => options
+          .map(
+            (option) => PopupMenuItem<UomOption>(
+              value: option,
+              child: Text(
+                option.factor == 1
+                    ? option.label
+                    : '${option.label} (${option.factor} ${line.part.baseUnit})',
+              ),
+            ),
+          )
+          .toList(growable: false),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(width: 2),
+            const Icon(Icons.arrow_drop_down_rounded, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _QuantityStepper extends StatelessWidget {
   const _QuantityStepper({
     required this.quantity,
@@ -531,6 +796,7 @@ class _QuantityStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -543,7 +809,7 @@ class _QuantityStepper extends StatelessWidget {
         children: [
           _QuantityButton(
             icon: Icons.remove_rounded,
-            tooltip: quantity <= 1 ? 'Remove line' : 'Decrease quantity',
+            tooltip: quantity <= 1 ? l10n.removeLine : l10n.decreaseQuantity,
             onPressed: onDecrement,
           ),
           SizedBox(
@@ -559,7 +825,7 @@ class _QuantityStepper extends StatelessWidget {
           ),
           _QuantityButton(
             icon: Icons.add_rounded,
-            tooltip: 'Increase quantity',
+            tooltip: l10n.increaseQuantity,
             onPressed: onIncrement,
           ),
         ],
@@ -598,15 +864,20 @@ class _CheckoutFooter extends StatelessWidget {
   const _CheckoutFooter({
     required this.controller,
     required this.onCharge,
+    this.onProforma,
+    this.onEmailProforma,
   });
 
   final CheckoutController controller;
   final VoidCallback onCharge;
+  final Future<void> Function()? onProforma;
+  final Future<void> Function()? onEmailProforma;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -643,22 +914,28 @@ class _CheckoutFooter extends StatelessWidget {
             const SizedBox(height: 8),
           ],
           _AmountRow(
-            label: 'Subtotal',
+            label: l10n.subtotal,
             amountCents: controller.subtotalCents,
           ),
           const SizedBox(height: 3),
           _AmountRow(
-            label:
-                'VAT ${Money.percentLabel(CheckoutController.taxRateBps)}',
+            label: l10n.vatRate(Money.percentLabel(controller.taxRateBps)),
             amountCents: controller.taxCents,
           ),
+          if (controller.coreFeeCents > 0) ...[
+            const SizedBox(height: 3),
+            _AmountRow(
+              label: l10n.coreDeposits,
+              amountCents: controller.coreFeeCents,
+            ),
+          ],
           const SizedBox(height: 8),
           Divider(height: 1, color: scheme.outlineVariant),
           const SizedBox(height: 8),
           Row(
             children: [
               Text(
-                'TOTAL',
+                l10n.total.toUpperCase(),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                   letterSpacing: 0.6,
@@ -685,7 +962,7 @@ class _CheckoutFooter extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'PAYMENT',
+            l10n.paymentMethod.toUpperCase(),
             style: theme.textTheme.labelSmall?.copyWith(
               color: scheme.onSurfaceVariant,
               letterSpacing: 0.8,
@@ -704,6 +981,41 @@ class _CheckoutFooter extends StatelessWidget {
                 ),
             ],
           ),
+          if (onProforma != null || onEmailProforma != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (onProforma != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: controller.canCheckout ? onProforma : null,
+                      icon: const Icon(Icons.description_outlined, size: 17),
+                      label: Text(
+                        l10n.printProforma,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                if (onProforma != null && onEmailProforma != null)
+                  const SizedBox(width: 6),
+                if (onEmailProforma != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: controller.canCheckout
+                          ? onEmailProforma
+                          : null,
+                      icon: const Icon(Icons.outgoing_mail, size: 17),
+                      label: Text(
+                        l10n.emailProforma,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
@@ -715,29 +1027,29 @@ class _CheckoutFooter extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                   : Row(
-                       children: [
-                         const Text('Charge'),
-                         const SizedBox(width: 8),
-                         Expanded(
-                           child: Align(
-                             alignment: Alignment.centerRight,
-                             child: FittedBox(
-                               fit: BoxFit.scaleDown,
-                               alignment: Alignment.centerRight,
-                               child: Text(
-                                 Money.formatCents(controller.totalCents),
-                               ),
-                             ),
-                           ),
-                         ),
-                       ],
-                     ),
+                  : Row(
+                      children: [
+                        Text(l10n.charge),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                Money.formatCents(controller.totalCents),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Offline commit · invoice + lines + stock ledger are atomic',
+            l10n.offlineCommit,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
               color: scheme.onSurfaceVariant,
@@ -807,7 +1119,7 @@ class _PaymentChip extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return ChoiceChip(
-      label: Text(method.label),
+      label: Text(_paymentLabel(AppLocalizations.of(context), method)),
       selected: selected,
       onSelected: (_) => onSelected(),
       showCheckmark: false,
@@ -818,14 +1130,19 @@ class _PaymentChip extends StatelessWidget {
       side: BorderSide(
         color: selected ? scheme.primary : scheme.outlineVariant,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       labelStyle: theme.textTheme.labelMedium?.copyWith(
-        color: selected
-            ? scheme.onPrimaryContainer
-            : scheme.onSurfaceVariant,
+        color: selected ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
       ),
     );
   }
 }
+
+String _paymentLabel(AppLocalizations l10n, PaymentMethod method) =>
+    switch (method) {
+      PaymentMethod.cash => l10n.cash,
+      PaymentMethod.card => l10n.card,
+      PaymentMethod.mobile => l10n.mobile,
+    };
+
+enum _ReceiptAction { close, print, email }

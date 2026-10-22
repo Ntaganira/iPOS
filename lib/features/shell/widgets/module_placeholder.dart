@@ -16,6 +16,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_layout.dart';
+import '../../../l10n/generated/app_localizations.dart';
+import '../module_labels.dart';
 import '../pos_module.dart';
 
 /// Placeholder panel for modules queued behind the register implementation.
@@ -28,6 +30,7 @@ class ModulePlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -58,13 +61,13 @@ class ModulePlaceholder extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  module.label,
+                  moduleLabel(l10n, module),
                   style: theme.textTheme.titleLarge,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  module.description,
+                  moduleDescription(l10n, module),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -83,7 +86,7 @@ class ModulePlaceholder extends StatelessWidget {
                       vertical: 6,
                     ),
                     child: Text(
-                      'SCAFFOLDED · BACK-OFFICE INTEGRATION PENDING',
+                      l10n.scaffoldedPending,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
