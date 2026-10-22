@@ -13,19 +13,59 @@
  * </pre>
  */
 
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'core/diagnostics/crash_reporter.dart';
 import 'core/theme/app_theme.dart';
 import 'data/database/app_database_factory.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  CrashReporter? reporter;
+  try {
+    reporter = await CrashReporter.open();
+  } catch (_) {
+    // The till must still start when the diagnostics directory is read-only.
+  }
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    final crashReporter = reporter;
+    if (crashReporter != null) {
+      unawaited(
+        crashReporter.record(
+          details.exception,
+          details.stack ?? StackTrace.empty,
+          context: details.context?.toDescription() ?? 'flutter',
+          details: {
+            if (details.library != null) 'library': details.library,
+            if (details.context != null)
+              'description': details.context!.toDescription(),
+          },
+        ),
+      );
+    }
+  };
+  PlatformDispatcher.instance.onError = (error, stackTrace) {
+    final crashReporter = reporter;
+    if (crashReporter != null) {
+      unawaited(
+        crashReporter.record(error, stackTrace, context: 'platform-dispatcher'),
+      );
+    }
+    return true;
+  };
+
   try {
     final database = await AppDatabaseFactory.open();
     runApp(PosApp(database: database));
   } catch (error, stackTrace) {
+    await reporter?.record(error, stackTrace, context: 'bootstrap');
     FlutterError.reportError(
       FlutterErrorDetails(
         exception: error,

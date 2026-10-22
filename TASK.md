@@ -116,7 +116,7 @@ or CI-only work).
 - [x] Add this tracker and keep checklist flags current.
 - [x] Run `flutter analyze` and `flutter test` clean (schema, vault, ledger, audit, auth, notifications, responsive/locale smoke).
 - [ ] Run Android, iOS, Windows, macOS, and Linux smoke builds on their native runners.
-- [ ] Add crash reporting with secret redaction and structured checkout audit logs.
+- [x] Add crash reporting with secret redaction and structured checkout audit logs.
 - [ ] Add rate/disk-full handling, database key loss UX, and disaster-recovery runbook.
 - [ ] Add accessibility pass (contrast audit, large text, screen reader labels).
 
