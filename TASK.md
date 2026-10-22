@@ -118,7 +118,7 @@ or CI-only work).
 - [ ] Run Android, iOS, Windows, macOS, and Linux smoke builds on their native runners.
 - [x] Add crash reporting with secret redaction and structured checkout audit logs.
 - [ ] Add rate/disk-full handling, database key loss UX, and disaster-recovery runbook.
-- [ ] Add accessibility pass (contrast audit, large text, screen reader labels).
+- [x] Add accessibility pass (contrast audit, large text, screen reader labels).
 
 ## 8. Identity, Localization, Notifications & Audit
 

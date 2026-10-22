@@ -33,6 +33,7 @@ class AppSidebar extends StatelessWidget {
     required this.onToggleTheme,
     this.showCollapseAction = true,
     this.modules = PosModule.values,
+    this.duration = AppLayout.layoutAnimation,
   });
 
   final bool expanded;
@@ -44,6 +45,10 @@ class AppSidebar extends StatelessWidget {
   final bool showCollapseAction;
   final List<PosModule> modules;
 
+  /// Zero when the rail is already at its only legal width for this viewport,
+  /// so a window shrink cannot animate a wide rail over the catalog.
+  final Duration duration;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -51,7 +56,7 @@ class AppSidebar extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return AnimatedContainer(
-      duration: AppLayout.layoutAnimation,
+      duration: duration,
       curve: Curves.easeOutCubic,
       width: expanded
           ? AppLayout.sidebarExpandedWidth
@@ -157,8 +162,12 @@ class _BrandHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    final textScale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1.0).clamp(1.0, 2.0);
+
     return SizedBox(
-      height: 62,
+      height: expanded ? 62 * textScale : 62,
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: expanded ? 14 : 0),
         child: expanded

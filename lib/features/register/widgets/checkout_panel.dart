@@ -353,10 +353,14 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               // Short windows (phone landscape, split-screen tablets) cannot
-              // fit a sticky header/customer/footer stack. In that case the
-              // entire checkout scrolls instead of producing a RenderFlex
+              // fit a sticky header/customer/footer stack. Large text scales
+              // the same stack, so the threshold scales with it. In that case
+              // the entire checkout scrolls instead of producing a RenderFlex
               // overflow; taller counters keep the charge action pinned.
-              if (constraints.maxHeight < 620) {
+              final textScale = MediaQuery.textScalerOf(
+                context,
+              ).scale(1.0).clamp(1.0, 2.0);
+              if (constraints.maxHeight < 620 * textScale) {
                 return SingleChildScrollView(
                   child: Column(
                     children: [

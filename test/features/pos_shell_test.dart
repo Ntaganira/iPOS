@@ -99,12 +99,19 @@ void main() {
     await database.close();
   });
 
-  Widget buildApp({Locale locale = const Locale('en')}) {
+  Widget buildApp({
+    Locale locale = const Locale('en'),
+    TextScaler textScaler = TextScaler.noScaling,
+  }) {
     return MaterialApp(
       theme: AppTheme.dark,
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: iposLocalizationsDelegates,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+        child: child!,
+      ),
       home: PosShell(
         catalogController: catalogController,
         checkoutController: checkoutController,
@@ -118,11 +125,12 @@ void main() {
     WidgetTester tester,
     Size size, {
     Locale locale = const Locale('en'),
+    TextScaler textScaler = TextScaler.noScaling,
   }) async {
     tester.view
       ..physicalSize = size
       ..devicePixelRatio = 1.0;
-    await tester.pumpWidget(buildApp(locale: locale));
+    await tester.pumpWidget(buildApp(locale: locale, textScaler: textScaler));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
   }
@@ -201,5 +209,51 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Checkout'), findsOneWidget);
     expect(find.text('Cart'), findsNothing);
+  });
+
+  testWidgets('large text remains usable at phone, tablet, and desktop sizes', (
+    tester,
+  ) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const sizes = <Size>[Size(390, 844), Size(800, 600), Size(1280, 800)];
+    for (final scale in const <double>[1.3, 1.6, 2.0]) {
+      for (final size in sizes) {
+        await pumpAt(tester, size, textScaler: TextScaler.linear(scale));
+        expect(
+          tester.takeException(),
+          isNull,
+          reason:
+              'Unexpected layout exception at ${size.width}x${size.height} '
+              'with text scale $scale',
+        );
+        expect(find.byType(PosShell), findsOneWidget);
+      }
+    }
+  });
+
+  testWidgets('every shell icon control exposes a screen-reader label', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    try {
+      await pumpAt(tester, const Size(1280, 800));
+
+      final buttons = tester.widgetList<IconButton>(find.byType(IconButton));
+      expect(buttons, isNotEmpty);
+      for (final button in buttons) {
+        expect(
+          button.tooltip,
+          isNotNull,
+          reason: 'Icon-only controls must expose a tooltip/semantics label.',
+        );
+      }
+    } finally {
+      semantics.dispose();
+    }
   });
 }

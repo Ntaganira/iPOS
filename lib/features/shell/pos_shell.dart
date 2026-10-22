@@ -276,6 +276,9 @@ class _PosShellState extends State<PosShell> {
                             },
                             isDarkMode: widget.isDarkMode,
                             onToggleTheme: widget.onToggleTheme,
+                            duration: canExpandSidebar
+                                ? AppLayout.layoutAnimation
+                                : Duration.zero,
                           ),
                           const SizedBox(width: AppLayout.shellGap),
                           Expanded(

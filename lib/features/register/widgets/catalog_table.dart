@@ -106,13 +106,17 @@ class _CatalogTableState extends State<CatalogTable> {
       );
     }
 
+    final rowHeight =
+        AppLayout.catalogRowHeight *
+        MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 2.0);
+
     return Scrollbar(
       controller: _scrollController,
       thumbVisibility: true,
       child: ListView.builder(
         controller: _scrollController,
         padding: EdgeInsets.zero,
-        itemExtent: AppLayout.catalogRowHeight,
+        itemExtent: rowHeight,
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         itemCount: widget.results.length,
         itemBuilder: (context, index) {

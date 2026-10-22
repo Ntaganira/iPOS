@@ -340,38 +340,59 @@ class _WorkspaceHeader extends StatelessWidget {
     final scheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context);
 
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.frontCounter, style: theme.textTheme.titleLarge),
-              const SizedBox(height: 1),
-              Text(
-                l10n.frontCounterSubtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 240;
+        return Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.frontCounter,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    l10n.frontCounterSubtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        if (onOpenCheckout != null) ...[
-          const SizedBox(width: 8),
-          OutlinedButton.icon(
-            onPressed: onOpenCheckout,
-            icon: Badge(
-              isLabelVisible: cartCount > 0,
-              label: Text('$cartCount'),
-              child: const Icon(Icons.shopping_cart_outlined, size: 18),
             ),
-            label: Text(l10n.cart),
-          ),
-        ],
-      ],
+            if (onOpenCheckout != null) ...[
+              const SizedBox(width: 8),
+              if (compact)
+                IconButton(
+                  tooltip: l10n.cart,
+                  onPressed: onOpenCheckout,
+                  icon: Badge(
+                    isLabelVisible: cartCount > 0,
+                    label: Text('$cartCount'),
+                    child: const Icon(Icons.shopping_cart_outlined, size: 18),
+                  ),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: onOpenCheckout,
+                  icon: Badge(
+                    isLabelVisible: cartCount > 0,
+                    label: Text('$cartCount'),
+                    child: const Icon(Icons.shopping_cart_outlined, size: 18),
+                  ),
+                  label: Text(l10n.cart),
+                ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
@@ -403,31 +424,41 @@ class _CatalogStatusBar extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final compact = constraints.maxWidth < 220;
           return Row(
             children: [
-              Text(
-                loading ? l10n.searching : l10n.resultsCount(resultCount),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: scheme.outlineVariant),
-                ),
+              Flexible(
                 child: Text(
-                  l10n.localOnly.toUpperCase(),
-                  style: theme.textTheme.labelSmall?.copyWith(
+                  loading ? l10n.searching : l10n.resultsCount(resultCount),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: scheme.onSurfaceVariant,
-                    fontSize: 9,
-                    letterSpacing: 0.9,
                   ),
                 ),
               ),
+              if (!compact) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: scheme.outlineVariant),
+                  ),
+                  child: Text(
+                    l10n.localOnly.toUpperCase(),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 9,
+                      letterSpacing: 0.9,
+                    ),
+                  ),
+                ),
+              ],
               if (constraints.maxWidth >= 600) ...[
                 const SizedBox(width: 10),
                 Expanded(
