@@ -1,0 +1,28 @@
+# =============================================================================
+# - Project   : iWarehouse - Glass Warehouse & Mobile POS (ERP-Lite)
+# - Package   : com.ntaganira.heritier.iWarehouse
+# - File      : analysis_options.yaml
+# - Date      : 2026. 10. 22.
+# - User      : NTAGANIRA H.
+# - Desc      : Static-analysis policy. Generated Drift output is excluded from
+#               linting because it is a reproducible build artifact.
+# =============================================================================
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - build/**
+
+linter:
+  rules:
+    avoid_print: true
+    prefer_single_quotes: true
+    always_declare_return_types: true
+    directives_ordering: true
+    # The corporate JavaDoc-style block header is mandated in every source file.
+    # It intentionally precedes imports and is not attached to a library name.
+    dangling_library_doc_comments: false
+    slash_for_doc_comments: false

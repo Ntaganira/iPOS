@@ -1,0 +1,67 @@
+# =============================================================================
+# - Project   : iWarehouse - Glass Warehouse & Mobile POS (ERP-Lite)
+# - Package   : com.ntaganira.heritier.iWarehouse
+# - File      : pubspec.yaml
+# - Date      : 2026. 10. 22.
+# - User      : NTAGANIRA H.
+# - Desc      : Dependency and native-build manifest for the offline-first
+#               Flutter POS. SQLCipher is selected through package:sqlite3
+#               native build hooks; the legacy sqlcipher_flutter_libs and
+#               sqflite_sqlcipher packages are intentionally not used because
+#               they are end-of-life for sqlite3 3.x and later.
+# =============================================================================
+
+name: iwarehouse
+description: iWarehouse offline-first glass warehouse and mobile POS (ERP-Lite).
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.0
+  flutter: ">=3.38.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Database engine, schema ownership, migrations, and ACID transactions.
+  drift: ^2.35.2
+
+  # Native SQLite bindings. Version 3.x bundles signed native artifacts through
+  # Dart/Flutter build hooks. No manual DLL/dylib/so shipping is required.
+  sqlite3: ^3.7.1
+
+  # Platform-backed secret storage. Android Keystore-backed AES/RSA wrapping,
+  # iOS/macOS Keychain, Windows credential protection, Linux Secret Service.
+  flutter_secure_storage: ^11.2.0
+
+  # Deterministic local file location and path composition.
+  path: ^1.9.0
+  path_provider: ^2.1.6
+
+  # Client-side UUIDv4 identifiers for offline-first replicated records.
+  uuid: ^4.6.0
+
+  # Currency and invoice-number formatting; no network dependency.
+  intl: ^0.20.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  drift_dev: ^2.35.1
+  # build_runner 2.17.x moved to build 5.x, which current drift_dev does not
+  # accept. Keep the solver on the 2.16 line until drift_dev widens the range.
+  build_runner: ^2.16.2
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+# Select the SQLCipher community build of SQLite. package:sqlite3 downloads and
+# verifies the matching native artifact for Android, iOS, macOS, Windows, and
+# Linux. This is the current replacement for the retired sqlcipher_flutter_libs
+# package. Review SQLCipher/OpenSSL licensing before distributing binaries.
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlcipher
