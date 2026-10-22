@@ -525,6 +525,18 @@ class AppLocalizationsRw extends AppLocalizations {
       'Ububiko bufunze ntibuboneka. Ntukureho amakuru y’porogaramu; kurikiza uburyo bwo gutabara.';
 
   @override
+  String get errorStorageReadOnly =>
+      'Ububiko burahindurwa gusa. Reba uburenganzira bwa disiki cyangwa urekure umwanya.';
+
+  @override
+  String get errorStorageBusy =>
+      'Ububiko burakora. Tegereza akanya maze ugerageze; ibiri mu kagari ntibyatakaye.';
+
+  @override
+  String get errorStorageCorrupt =>
+      'Ububiko bwo mu muduga ntibushobora gusomwa. Ntukureho amakuru y’aporogaramu; ohereza kopi y’ububiko cyangwa ukurikize uburyo bwo gutabara.';
+
+  @override
   String get notifications => 'Amakuru';
 
   @override

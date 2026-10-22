@@ -101,6 +101,41 @@ class SecureKeyManager {
     return load.whenComplete(() => _pendingLoad = null);
   }
 
+  /// Reads the existing key without ever provisioning a replacement.
+  ///
+  /// Bootstrap uses this when an encrypted database file already exists: a
+  /// missing secure-store entry is a key-loss event, not a first launch, and
+  /// silently generating a new key would guarantee that the ledger stays
+  /// unreadable.
+  Future<String> existingDatabaseKeyHex() async {
+    final cached = _cachedKeyHex;
+    if (cached != null) {
+      return cached;
+    }
+
+    final existing = await _storage.read(key: _databaseKeyAlias);
+    if (existing == null) {
+      throw StateError(
+        'The encrypted ledger exists but its database key is missing from the '
+        'platform secure store. Do not uninstall or clear app data. Restore '
+        'the original secure-store entry or contact an administrator and '
+        'follow docs/DISASTER_RECOVERY.md.',
+      );
+    }
+
+    final normalized = existing.trim().toLowerCase();
+    if (!_keyPattern.hasMatch(normalized)) {
+      throw StateError(
+        'The secure store contains an invalid iPOS database key. '
+        'Refusing to regenerate it: doing so would make the existing '
+        'encrypted ledger unreadable. Restore the original key or follow '
+        'the documented disaster-recovery procedure.',
+      );
+    }
+    _cachedKeyHex = normalized;
+    return normalized;
+  }
+
   /// Reads and validates the platform secret, provisioning a new key only when
   /// no value exists at all.
   Future<String> _loadOrProvision() async {

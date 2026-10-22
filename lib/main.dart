@@ -17,6 +17,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app.dart';
 import 'core/diagnostics/crash_reporter.dart';
@@ -74,7 +75,9 @@ Future<void> main() async {
         context: ErrorDescription('opening the encrypted local ledger'),
       ),
     );
-    runApp(_BootFailureApp(error: error));
+    runApp(
+      _BootFailureApp(error: error, diagnosticsPath: reporter?.logFile.path),
+    );
   }
 }
 
@@ -82,9 +85,10 @@ Future<void> main() async {
 /// be opened. It intentionally provides no "reset database" action: a lost key
 /// is a data-loss event that must go through the documented recovery process.
 class _BootFailureApp extends StatelessWidget {
-  const _BootFailureApp({required this.error});
+  const _BootFailureApp({required this.error, this.diagnosticsPath});
 
   final Object error;
+  final String? diagnosticsPath;
 
   @override
   Widget build(BuildContext context) {
@@ -140,6 +144,40 @@ class _BootFailureApp extends StatelessWidget {
                           color: const Color(0xFFB6C2CE),
                         ),
                       ),
+                    ),
+                    if (diagnosticsPath != null) ...[
+                      const SizedBox(height: 12),
+                      SelectableText(
+                        'Diagnostics: $diagnosticsPath',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF8A9BA8),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final path = diagnosticsPath ?? 'unavailable';
+                        await Clipboard.setData(
+                          ClipboardData(
+                            text:
+                                'iPOS encrypted vault startup failure\n'
+                                'Time: ${DateTime.now().toUtc().toIso8601String()}\n'
+                                'Error: $error\n'
+                                'Diagnostics: $path\n'
+                                'Recovery: docs/DISASTER_RECOVERY.md',
+                          ),
+                        );
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Diagnostics copied to clipboard.'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_all_rounded),
+                      label: const Text('Copy diagnostics'),
                     ),
                   ],
                 ),

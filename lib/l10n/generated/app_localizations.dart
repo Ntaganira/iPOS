@@ -1078,6 +1078,24 @@ abstract class AppLocalizations {
   /// **'The encrypted vault is unavailable. Do not clear app data; follow the recovery runbook.'**
   String get errorVault;
 
+  /// No description provided for @errorStorageReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage is read-only. Check disk permissions or free the volume.'**
+  String get errorStorageReadOnly;
+
+  /// No description provided for @errorStorageBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'The ledger is busy. Wait a moment and retry; the cart is intact.'**
+  String get errorStorageBusy;
+
+  /// No description provided for @errorStorageCorrupt.
+  ///
+  /// In en, this message translates to:
+  /// **'The local ledger could not be read. Do not clear app data; export a backup or follow the recovery runbook.'**
+  String get errorStorageCorrupt;
+
   /// No description provided for @notifications.
   ///
   /// In en, this message translates to:

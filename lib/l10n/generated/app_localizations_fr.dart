@@ -531,6 +531,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le coffre chiffré est indisponible. N’effacez pas les données de l’application ; suivez la procédure de récupération.';
 
   @override
+  String get errorStorageReadOnly =>
+      'Le stockage est en lecture seule. Vérifiez les permissions du disque ou libérez de l’espace.';
+
+  @override
+  String get errorStorageBusy =>
+      'Le registre est occupé. Patientez un instant et réessayez ; le panier est intact.';
+
+  @override
+  String get errorStorageCorrupt =>
+      'Le registre local est illisible. N’effacez pas les données de l’application ; exportez une sauvegarde ou suivez la procédure de récupération.';
+
+  @override
   String get notifications => 'Notifications';
 
   @override

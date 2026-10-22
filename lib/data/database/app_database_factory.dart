@@ -34,9 +34,13 @@ abstract final class AppDatabaseFactory {
   /// No passphrase or key derivation is used at runtime; the secure store owns
   /// the root secret and SQLCipher owns file-level authenticated encryption.
   static Future<AppDatabase> open({SecureKeyManager? keyManager}) async {
-    final keyHex = await (keyManager ?? SecureKeyManager.instance)
-        .databaseKeyHex();
+    final manager = keyManager ?? SecureKeyManager.instance;
     final databaseFile = await resolveDatabaseFile();
+    final hasExistingLedger =
+        await databaseFile.exists() && await databaseFile.length() > 0;
+    final keyHex = hasExistingLedger
+        ? await manager.existingDatabaseKeyHex()
+        : await manager.databaseKeyHex();
 
     final executor = NativeDatabase.createInBackground(
       databaseFile,

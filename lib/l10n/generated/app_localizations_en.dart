@@ -523,6 +523,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'The encrypted vault is unavailable. Do not clear app data; follow the recovery runbook.';
 
   @override
+  String get errorStorageReadOnly =>
+      'Storage is read-only. Check disk permissions or free the volume.';
+
+  @override
+  String get errorStorageBusy =>
+      'The ledger is busy. Wait a moment and retry; the cart is intact.';
+
+  @override
+  String get errorStorageCorrupt =>
+      'The local ledger could not be read. Do not clear app data; export a backup or follow the recovery runbook.';
+
+  @override
   String get notifications => 'Notifications';
 
   @override

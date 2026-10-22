@@ -43,10 +43,10 @@ void main() {
     }
   });
 
-  AppDatabase openWithKey(String key) {
+  AppDatabase openFileWithKey(File file, String key) {
     return AppDatabase(
       NativeDatabase(
-        databaseFile,
+        file,
         setup: (raw) {
           raw.execute("PRAGMA key = \"x'$key'\";");
           raw.execute('PRAGMA cipher_compatibility = 4;');
@@ -57,6 +57,8 @@ void main() {
       ),
     );
   }
+
+  AppDatabase openWithKey(String key) => openFileWithKey(databaseFile, key);
 
   Future<void> seed(AppDatabase database) async {
     await database
@@ -120,6 +122,13 @@ void main() {
     );
 
     await database.close();
+
+    final unreadableBackup = openFileWithKey(backup, newKey);
+    await expectLater(
+      unreadableBackup.select(unreadableBackup.customers).get(),
+      throwsA(anything),
+    );
+    await unreadableBackup.close();
 
     final backupDatabase = AppDatabase(
       NativeDatabase(

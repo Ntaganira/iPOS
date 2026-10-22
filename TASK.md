@@ -42,8 +42,8 @@ or CI-only work).
 - [x] Fail closed if an existing key is malformed; never silently rotate a live database key.
 - [x] Configure platform secure-storage options (Android RSA-OAEP/AES-GCM; macOS keychain mode).
 - [x] Document OS-protected key guarantees and platform limitations in source Doxygen/DartDoc.
-- [ ] Add migration ceremony for key rotation (`PRAGMA rekey`) behind an explicit admin action.
-- [ ] Add backup/restore playbook proving the encrypted file is unusable without the platform key.
+- [x] Add migration ceremony for key rotation (`PRAGMA rekey`) behind an explicit admin action.
+- [x] Add backup/restore playbook proving the encrypted file is unusable without the platform key.
 
 ## 3. Encrypted Database & Relational Schema
 
@@ -117,7 +117,7 @@ or CI-only work).
 - [x] Run `flutter analyze` and `flutter test` clean (schema, vault, ledger, audit, auth, notifications, responsive/locale smoke).
 - [ ] Run Android, iOS, Windows, macOS, and Linux smoke builds on their native runners.
 - [x] Add crash reporting with secret redaction and structured checkout audit logs.
-- [ ] Add rate/disk-full handling, database key loss UX, and disaster-recovery runbook.
+- [x] Add rate/disk-full handling, database key loss UX, and disaster-recovery runbook.
 - [x] Add accessibility pass (contrast audit, large text, screen reader labels).
 
 ## 8. Identity, Localization, Notifications & Audit

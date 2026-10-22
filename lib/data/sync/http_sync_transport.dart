@@ -146,9 +146,16 @@ class HttpSyncTransport implements SyncTransport {
       final truncated = preview.length > 180
           ? '${preview.substring(0, 180)}...'
           : preview;
+      final retryHeader = response.headers['retry-after']?.trim();
+      final retrySeconds = retryHeader == null
+          ? null
+          : int.tryParse(retryHeader);
       throw SyncException(
         'Sync request failed with HTTP ${response.statusCode}. $truncated',
         statusCode: response.statusCode,
+        retryAfter: retrySeconds == null
+            ? null
+            : Duration(seconds: retrySeconds < 0 ? 0 : retrySeconds),
       );
     }
     final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -161,10 +168,13 @@ class HttpSyncTransport implements SyncTransport {
 
 /// Typed transport failure safe to surface in the UI.
 class SyncException implements Exception {
-  const SyncException(this.message, {this.statusCode});
+  const SyncException(this.message, {this.statusCode, this.retryAfter});
 
   final String message;
   final int? statusCode;
+
+  /// Server-requested delay from `Retry-After`, when present.
+  final Duration? retryAfter;
 
   @override
   String toString() => message;

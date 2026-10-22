@@ -23,6 +23,7 @@ import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../models/app_notification.dart';
 import '../repositories/notification_repository.dart';
+import 'http_sync_transport.dart';
 import 'sync_contract.dart';
 
 /// Summary of one push/pull cycle.
@@ -120,11 +121,15 @@ class SyncService {
       }
       await _writeCursor(page.nextCursor);
     } catch (error) {
-      await _deferPending(error.toString());
+      await _deferPending(error);
+      final rateLimited = error is SyncException && error.statusCode == 429;
       await _notify(
         kind: 'sync_failed',
         title: 'Sync failed',
-        message: _truncate(error.toString()),
+        message: rateLimited
+            ? 'Sync is rate-limited. The outbox is preserved and will retry '
+                  'after the server delay.'
+            : _truncate(error.toString()),
         severity: NotificationSeverity.warning,
         dedupeKey: 'sync_failed',
       );
@@ -193,23 +198,31 @@ class SyncService {
     );
   }
 
-  Future<void> _deferPending(String message) async {
+  Future<void> _deferPending(Object failure) async {
     final now = DateTime.now().toUtc();
+    final syncFailure = failure is SyncException ? failure : null;
+    final retryAfter = syncFailure?.retryAfter;
+    final rateLimited = syncFailure?.statusCode == 429;
     final pending = await (_database.select(
       _database.syncOutbox,
     )..where((table) => table.isAcknowledged.equals(false))).get();
     for (final row in pending) {
       final attempts = row.attempts + 1;
-      final delay = Duration(
+      final backoff = Duration(
         seconds: min(3600, 30 * pow(2, min(attempts, 7)).toInt()),
       );
+      final delay = retryAfter != null
+          ? Duration(seconds: retryAfter.inSeconds.clamp(1, 3600))
+          : rateLimited
+          ? Duration(seconds: max(120, backoff.inSeconds).clamp(120, 3600))
+          : backoff;
       await (_database.update(
         _database.syncOutbox,
       )..where((table) => table.id.equals(row.id))).write(
         SyncOutboxCompanion(
           attempts: Value(attempts),
           nextAttemptAt: Value(now.add(delay)),
-          lastError: Value(_truncate(message)),
+          lastError: Value(_truncate(failure.toString())),
         ),
       );
     }

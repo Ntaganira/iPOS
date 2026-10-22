@@ -21,6 +21,7 @@ import '../../../core/email/invoice_email_service.dart';
 import '../../../core/printing/esc_pos_printer.dart';
 import '../../../core/printing/receipt_factory.dart';
 import '../../../core/printing/receipt_paper.dart';
+import '../../../core/storage/storage_failure.dart';
 import '../../../core/theme/app_layout.dart';
 import '../../../core/utils/money.dart';
 import '../../../data/models/cart_line.dart';
@@ -906,7 +907,7 @@ class _CheckoutFooter extends StatelessWidget {
                   const SizedBox(width: 7),
                   Expanded(
                     child: Text(
-                      controller.error!,
+                      _checkoutErrorMessage(l10n, controller),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: scheme.onErrorContainer,
                       ),
@@ -1148,5 +1149,19 @@ String _paymentLabel(AppLocalizations l10n, PaymentMethod method) =>
       PaymentMethod.card => l10n.card,
       PaymentMethod.mobile => l10n.mobile,
     };
+
+String _checkoutErrorMessage(
+  AppLocalizations l10n,
+  CheckoutController controller,
+) {
+  return switch (controller.failure) {
+    StorageFailure.diskFull => l10n.errorDiskFull,
+    StorageFailure.readOnly => l10n.errorStorageReadOnly,
+    StorageFailure.busy => l10n.errorStorageBusy,
+    StorageFailure.corrupt => l10n.errorStorageCorrupt,
+    StorageFailure.keyLost => l10n.errorVault,
+    _ => controller.error ?? l10n.errorGeneric,
+  };
+}
 
 enum _ReceiptAction { close, print, email }

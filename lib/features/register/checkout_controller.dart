@@ -16,6 +16,7 @@
 
 import 'package:flutter/foundation.dart';
 
+import '../../core/storage/storage_failure.dart';
 import '../../core/utils/money.dart';
 import '../../data/models/cart_draft.dart';
 import '../../data/models/cart_line.dart';
@@ -42,13 +43,16 @@ class CheckoutController extends ChangeNotifier {
   CheckoutController({
     required CheckoutRepository repository,
     int taxRateBps = defaultTaxRateBps,
+    Duration busyRetryDelay = const Duration(milliseconds: 150),
   }) : _repository = repository,
-       _taxRateBps = taxRateBps;
+       _taxRateBps = taxRateBps,
+       _busyRetryDelay = busyRetryDelay;
 
   /// Rwanda VAT for the initial deployment. Persisted per invoice and per line.
   static const int defaultTaxRateBps = 1800;
 
   final CheckoutRepository _repository;
+  final Duration _busyRetryDelay;
 
   final List<CartLine> _lines = <CartLine>[];
   final List<CustomerOption> _customers = <CustomerOption>[];
@@ -58,6 +62,7 @@ class CheckoutController extends ChangeNotifier {
   bool _loadingCustomers = false;
   bool _submitting = false;
   String? _error;
+  StorageFailure? _failure;
   bool _disposed = false;
   int _taxRateBps;
 
@@ -82,6 +87,7 @@ class CheckoutController extends ChangeNotifier {
   bool get loadingCustomers => _loadingCustomers;
   bool get submitting => _submitting;
   String? get error => _error;
+  StorageFailure? get failure => _failure;
 
   int get itemCount => _lines.fold<int>(0, (sum, line) => sum + line.quantity);
 
@@ -104,6 +110,7 @@ class CheckoutController extends ChangeNotifier {
   Future<void> initialize() async {
     _loadingCustomers = true;
     _error = null;
+    _failure = null;
     _safeNotify();
 
     try {
@@ -147,6 +154,7 @@ class CheckoutController extends ChangeNotifier {
       );
     }
     _error = null;
+    _failure = null;
     _safeNotify();
   }
 
@@ -216,6 +224,7 @@ class CheckoutController extends ChangeNotifier {
     }
     _lines.clear();
     _error = null;
+    _failure = null;
     _safeNotify();
   }
 
@@ -247,6 +256,7 @@ class CheckoutController extends ChangeNotifier {
       orElse: () => PaymentMethod.cash,
     );
     _error = null;
+    _failure = null;
     _safeNotify();
   }
 
@@ -261,6 +271,7 @@ class CheckoutController extends ChangeNotifier {
     _selectedCustomer = null;
     _paymentMethod = PaymentMethod.cash;
     _error = null;
+    _failure = null;
     if (hadState) {
       _safeNotify();
     }
@@ -291,15 +302,11 @@ class CheckoutController extends ChangeNotifier {
 
     _submitting = true;
     _error = null;
+    _failure = null;
     _safeNotify();
 
     try {
-      final result = await _repository.commitSale(
-        lines: List<CartLine>.unmodifiable(_lines),
-        customer: _selectedCustomer,
-        taxRateBps: taxRateBps,
-        paymentMethod: _paymentMethod.wireValue,
-      );
+      final result = await _commitWithBusyRetry();
 
       if (_disposed) {
         return result;
@@ -308,11 +315,12 @@ class CheckoutController extends ChangeNotifier {
       _lines.clear();
       _selectedCustomer = null;
       _paymentMethod = PaymentMethod.cash;
+      _failure = null;
       return result;
     } catch (error, stackTrace) {
       if (!_disposed) {
-        _error =
-            'Sale was not completed. Nothing was written; the cart is intact.';
+        _failure = StorageFailure.classify(error);
+        _error = _messageFor(_failure!);
         debugPrint('Checkout transaction failed: $error\n$stackTrace');
       }
       return null;
@@ -320,6 +328,49 @@ class CheckoutController extends ChangeNotifier {
       _submitting = false;
       _safeNotify();
     }
+  }
+
+  /// A single busy retry is safe because SQLite rolls the failed transaction
+  /// back before returning `SQLITE_BUSY`; retrying is never a double charge.
+  Future<CheckoutResult> _commitWithBusyRetry() async {
+    try {
+      return await _repository.commitSale(
+        lines: List<CartLine>.unmodifiable(_lines),
+        customer: _selectedCustomer,
+        taxRateBps: taxRateBps,
+        paymentMethod: _paymentMethod.wireValue,
+      );
+    } catch (error) {
+      if (StorageFailure.classify(error) != StorageFailure.busy) {
+        rethrow;
+      }
+      await Future<void>.delayed(_busyRetryDelay);
+      return _repository.commitSale(
+        lines: List<CartLine>.unmodifiable(_lines),
+        customer: _selectedCustomer,
+        taxRateBps: taxRateBps,
+        paymentMethod: _paymentMethod.wireValue,
+      );
+    }
+  }
+
+  String _messageFor(StorageFailure failure) {
+    return switch (failure) {
+      StorageFailure.diskFull =>
+        'Storage is full. Free space before continuing.',
+      StorageFailure.readOnly =>
+        'Storage is read-only. Check disk permissions or free the volume.',
+      StorageFailure.busy =>
+        'The ledger is busy. Wait a moment and retry; the cart is intact.',
+      StorageFailure.corrupt =>
+        'The local ledger could not be read. Do not clear app data; follow '
+            'the recovery runbook.',
+      StorageFailure.keyLost =>
+        'The encrypted vault key is unavailable. Do not clear app data; '
+            'follow the recovery runbook.',
+      StorageFailure.unknown =>
+        'Sale was not completed. Nothing was written; the cart is intact.',
+    };
   }
 
   void _safeNotify() {

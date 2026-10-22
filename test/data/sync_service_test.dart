@@ -257,6 +257,43 @@ void main() {
     },
   );
 
+  test('rate limit honors Retry-After and preserves the outbox', () async {
+    await enqueue(
+      payload: const <String, Object?>{
+        'id': 'part-1',
+        'sku': 'SKU-1',
+        'part_name': 'Brake Pad',
+        'retail_price': 12000,
+      },
+    );
+    final transport = _FakeTransport()
+      ..pushError = const SyncException(
+        'HTTP 429',
+        statusCode: 429,
+        retryAfter: Duration(seconds: 90),
+      );
+
+    await expectLater(
+      SyncService(
+        database: database,
+        transport: transport,
+        deviceId: 'device-1',
+      ).run(),
+      throwsA(isA<SyncException>()),
+    );
+
+    final outbox = await (database.select(
+      database.syncOutbox,
+    )..where((table) => table.id.equals('outbox-1'))).getSingle();
+    expect(outbox.isAcknowledged, isFalse);
+    expect(outbox.attempts, 1);
+    final wait = outbox.nextAttemptAt!.difference(DateTime.now().toUtc());
+    expect(wait.inSeconds, inInclusiveRange(85, 90));
+
+    final notifications = await NotificationRepository(database).list();
+    expect(notifications.single.message, contains('rate-limited'));
+  });
+
   test(
     'unknown pulled entity types are skipped while the cursor advances',
     () async {
