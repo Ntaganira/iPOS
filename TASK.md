@@ -139,6 +139,6 @@ or CI-only work).
 - [x] Add SMTP email configuration under Settings and send invoices/proformas as a PDF attachment or plain text.
 - [x] Persist and restore in-progress cart drafts across sign-out, shutdown, or accidental exit.
 - [x] Add runtime hotkey binding from persisted settings for search and checkout.
-- [ ] Add configurable scanner wedge timing (minimum scan length is enforced; timeout still needs a dedicated wedge detector).
+- [x] Add configurable scanner wedge timing through a dedicated key-burst detector in the register search field.
 - [ ] Wire the explicit admin key-rotation ceremony to the maintenance UI with restart guidance.
 - [ ] Add golden snapshots and cart-mutation/receipt interaction tests.

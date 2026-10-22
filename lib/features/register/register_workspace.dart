@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/input/hotkey_parser.dart';
+import '../../core/input/scan_wedge_detector.dart';
 import '../../core/theme/app_layout.dart';
 import '../../core/utils/money.dart';
 import '../../data/models/catalog_part.dart';
@@ -55,6 +56,7 @@ class RegisterWorkspace extends StatefulWidget {
 class _RegisterWorkspaceState extends State<RegisterWorkspace> {
   late final TextEditingController _searchController;
   late final FocusNode _searchFocusNode;
+  late final ScanWedgeDetector _wedgeDetector;
 
   @override
   void initState() {
@@ -63,6 +65,11 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
       text: widget.catalogController.query,
     );
     _searchFocusNode = FocusNode(debugLabel: 'catalogSearch');
+    _wedgeDetector = ScanWedgeDetector(
+      minLength: widget.settings?.scannerMinLength ?? 4,
+      timeout: Duration(milliseconds: widget.settings?.scannerTimeoutMs ?? 80),
+      onScan: _handleWedgeScan,
+    );
 
     // Desktop counters expect the caret ready on launch. On phones/tablets we
     // do not steal the first frame with the soft keyboard.
@@ -78,10 +85,32 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
   }
 
   @override
+  void didUpdateWidget(covariant RegisterWorkspace oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldSettings = oldWidget.settings;
+    final settings = widget.settings;
+    if (oldSettings?.scannerMinLength != settings?.scannerMinLength ||
+        oldSettings?.scannerTimeoutMs != settings?.scannerTimeoutMs) {
+      _wedgeDetector.configure(
+        minLength: settings?.scannerMinLength ?? 4,
+        timeout: Duration(milliseconds: settings?.scannerTimeoutMs ?? 80),
+      );
+    }
+  }
+
+  @override
   void dispose() {
+    _wedgeDetector.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _handleWedgeScan(String value) {
+    if (!mounted) {
+      return;
+    }
+    unawaited(_handleSubmitted(value));
   }
 
   Future<void> _handleSubmitted(String value) async {
@@ -218,10 +247,13 @@ class _RegisterWorkspaceState extends State<RegisterWorkspace> {
                             focusNode: _searchFocusNode,
                             onChanged: (value) {
                               widget.catalogController.setQuery(value);
+                              _wedgeDetector.textChanged(value);
                               setState(() {});
                             },
-                            onSubmitted: (value) =>
-                                unawaited(_handleSubmitted(value)),
+                            onSubmitted: (value) {
+                              _wedgeDetector.submitted();
+                              unawaited(_handleSubmitted(value));
+                            },
                             textInputAction: TextInputAction.search,
                             autocorrect: false,
                             enableSuggestions: false,
